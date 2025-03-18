@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor with AI APIs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+        }
+        
+        :root {
+            --primary-color: #7e57c2;
+            --primary-hover: #6a3fba;
+            --bg-dark: #1a1a1a;
+            --bg-medium: #252526;
+            --bg-light: #333333;
+            --text-light: #f5f5f5;
+            --text-secondary: #aaaaaa;
+            --border-color: #444444;
+            --html-color: #ff5252;
+            --css-color: #42a5f5;
+            --js-color: #ffca28;
+            --run-color: #4caf50;
+            --input-bg: #2d2d2d;
+            --deepseek-color: #00b4d8;
+            --deepseek-hover: #0096c7;
+            --credit-color: #ffa726;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: var(--bg-medium);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .logo svg {
+            color: var(--primary-color);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 12px;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-hover);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-run {
+            background-color: var(--run-color);
+            border-color: #388e3c;
+        }
+        
+        .btn-run:hover {
+            background-color: #388e3c;
+        }
+        
+        .btn-deepseek {
+            background-color: var(--deepseek-color);
+            border-color: var(--deepseek-hover);
+        }
+        
+        .btn-deepseek:hover {
+            background-color: var(--deepseek-hover);
+        }
+        
+        .editors-container {
+            display: flex;
+            height: 50%;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .editor-column {
+            flex: 1;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .editor-column:last-child {
+            border-right: none;
+        }
+        
+        .editor-header {
+            background-color: var(--bg-medium);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .language-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .editor-tools {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .editor {
+            flex: 1;
+            background-color: var(--bg-dark);
+            overflow: auto;
+            position: relative;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            color: var(--text-light);
+            border: none;
+            resize: none;
+            outline: none;
+            padding: 16px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .textarea-line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 100%;
+            background-color: var(--bg-medium);
+            color: var(--text-secondary);
+            text-align: right;
+            padding: 16px 5px;
+            user-select: none;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .viewers-container {
+            display: flex;
+            height: 50%;
+        }
+        
+        .html-viewer-column {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .css-js-viewer-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-header {
+            background-color: var(--bg-medium);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .viewer {
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .html-viewer {
+            background-color: white;
+            color: black;
+            padding: 20px;
+        }
+        
+        .css-viewer, .js-viewer {
+            background-color: var(--bg-medium);
+            color: var(--text-light);
+            padding: 10px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        
+        .js-viewer {
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .claude-api-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            border: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .html-btn { 
+            background-color: var(--html-color); 
+            color: white;
+        }
+        
+        .html-btn:hover {
+            background-color: #e53935;
+        }
+        
+        .css-btn { 
+            background-color: var(--css-color); 
+            color: white;
+        }
+        
+        .css-btn:hover {
+            background-color: #1e88e5;
+        }
+        
+        .js-btn { 
+            background-color: var(--js-color); 
+            color: black; 
+        }
+        
+        .js-btn:hover {
+            background-color: #ffb300;
+        }
+        
+        .deepseek-btn {
+            background-color: var(--deepseek-color);
+            color: white;
+        }
+        
+        .deepseek-btn:hover {
+            background-color: var(--deepseek-hover);
+        }
+        
+        /* API Key Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .modal {
+            background-color: var(--bg-medium);
+            border-radius: 8px;
+            padding: 20px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Status indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #f44336;
+        }
+        
+        .status-dot.active {
+            background-color: #4caf50;
+        }
+        
+        /* Tab styles */
+        .tab-switcher {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-medium);
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border-right: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .tab.active {
+            background-color: var(--bg-dark);
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: var(--bg-light);
+        }
+        
+        /* Line numbers */
+        textarea {
+            padding-left: 45px; /* Make room for line numbers */
+        }
+        
+        /* Image Upload Styles */
+        .image-upload-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 10px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            background-color: var(--bg-light);
+        }
+        
+        .image-upload-container:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .image-upload-label {
+            cursor: pointer;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+        }
+        
+        .image-upload-input {
+            display: none;
+        }
+        
+        .uploaded-image-preview {
+            max-width: 100%;
+            max-height: 100%;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        /* Image Animation Canvas */
+        .animation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        /* Credit system styles */
+        .credit-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 15px;
+            background-color: var(--bg-light);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .credit-icon {
+            color: var(--credit-color);
+        }
+        
+        .credit-count {
+            font-weight: 500;
+            color: var(--text-light);
+        }
+        
+        /* Payment Modal */
+        .payment-plan {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .payment-plan:hover, .payment-plan.selected {
+            border-color: var(--primary-color);
+            background-color: var(--bg-medium);
+        }
+        
+        .payment-plan.selected {
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+        
+        .payment-plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .plan-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .plan-price {
+            font-weight: 500;
+            color: var(--credit-color);
+        }
+        
+        .plan-features {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .plan-feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-light);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--text-light);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .toggle-label {
+            margin-left: 10px;
+        }
+
+        .ai-selection {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-selection-label {
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .ai-provider {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .provider-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .provider-btn.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-hover);
+        }
+        
+        .provider-btn.deepseek-provider.active {
+            background-color: var(--deepseek-color);
+            border-color: var(--deepseek-hover);
+        }
+        
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .editors-container, .viewers-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .editor-column, .html-viewer-column, .css-js-viewer-column {
+                height: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .claude-api-btn {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            
+            .language-tag span {
+                display: none;
+            }
+            
+            .actions {
+                flex-wrap: wrap;
+            }
+            
+            .credit-container {
+                margin-right: 0;
+                margin-bottom: 8px;
+            }
+        }
+        .image-control-panel {
+    background-color: var(--bg-medium);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    
+    /* New positioning properties to move it to the top */
+    position: relative;
+    order: -1;
+    z-index: 10;
+    /* Change where it appears in the DOM order */
+
+}
+.image-control-panel label {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.image-control-panel input {
+    width: 60px;
+    padding: 6px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-light);
+}
+
+/* Add button styling for consistency */
+.image-control-panel .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+
+.processed-images-container {
+    padding: 15px;
+    background-color: var(--bg-light);
+    border-radius: 6px;
+    margin: 15px 0;
+}
+
+.processed-images-container h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: var(--text-light);
+}
+
+.processed-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.processed-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.processed-image-container canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.image-label {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+            </svg>
+            <span>AI Code Editor</span>
+        </div>
+        <div class="actions">
+            <div class="credit-container">
+                <svg class="credit-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span class="credit-count" id="creditCount">10 credits</span>
+                <button class="btn btn-primary" id="buyCreditsBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Buy
+                </button>
+            </div>
+            <div class="api-status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="apiStatusText">API Key Not Set</span>
+            </div>
+            <button class="btn" id="imageUploadBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                Upload Image
+            </button>
+            <button class="btn" id="apiKeyBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                </svg>
+                Set API Keys
+            </button>
+            <button class="btn btn-run" id="runCode">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Run Code
+            </button>
+        </div>
+    </div>
+    
+    <div class="editors-container">
+        <!-- HTML Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header html-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--html-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    <span>HTML</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="claude-api-btn html-btn" id="htmlClaudeBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Claude HTML
+                    </button>
+                    <button class="claude-api-btn deepseek-btn" id="htmlDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        DeepSeek HTML
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="htmlLineNumbers"></div>
+                <textarea id="htmlEditor" placeholder="Type your HTML here..."></textarea>
+            </div>
+        </div>
+        
+        <!-- CSS Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header css-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--css-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <span>CSS</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="claude-api-btn css-btn" id="cssClaudeBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Claude CSS
+                    </button>
+                    <button class="claude-api-btn deepseek-btn" id="cssDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        DeepSeek CSS
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="cssLineNumbers"></div>
+                <textarea id="cssEditor" placeholder="Type your CSS here..."></textarea>
+            </div>
+        </div>
+        
+        <!-- JS Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header js-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--js-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M16 8v8M8 16v-3a2 2 0 0 1 4 0v3"></path>
+                    </svg>
+                    <span>JavaScript</span>
+                </div>
+                <div class="editor-tools">
+                    <button class="claude-api-btn js-btn" id="jsClaudeBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        Claude JS
+                    </button>
+                    <button class="claude-api-btn deepseek-btn" id="jsDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        DeepSeek JS
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="jsLineNumbers"></div>
+                <textarea id="jsEditor" placeholder="Type your JavaScript here..."></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="viewers-container">
+        <!-- HTML Viewer -->
+        <div class="html-viewer-column">
+            <div class="viewer-header">
+                <span>Preview</span>
+                <button class="btn btn-run" id="refreshPreview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+            <div class="viewer html-viewer" id="htmlOutput">
+                <!-- HTML output will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- CSS & JS Viewers -->
+        <div class="css-js-viewer-column">
+            <div class="tab-switcher">
+                <div class="tab active" data-tab="console">Console</div>
+                <div class="tab" data-tab="css">CSS Output</div>
+            </div>
+            <div class="viewer js-viewer" id="jsOutput" data-tab-content="console">
+                <!-- JS output/console will be displayed here -->
+            </div>
+            <div class="viewer css-viewer" id="cssOutput" data-tab-content="css" style="display: none;">
+                <!-- CSS output will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="apiKeyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">AI API Settings</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="claudeApiKey">Claude API Key</label>
+                    <input type="password" id="claudeApiKey" class="form-input" placeholder="Enter your Claude API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="modelSelect">Claude Model</label>
+                    <select id="modelSelect" class="form-input">
+                        <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fastest, most economical)</option>
+                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet (Balanced)</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus (Most capable)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deepseekApiKey">DeepSeek API Key</label>
+                    <input type="password" id="deepseekApiKey" class="form-input" placeholder="Enter your DeepSeek API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deepseekModelSelect">DeepSeek Model</label>
+                    <select id="deepseekModelSelect" class="form-input">
+                        <option value="deepseek-coder">DeepSeek Coder</option>
+                        <option value="deepseek-chat">DeepSeek Chat</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="useCreatorApiKey">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Use creator's DeepSeek API (uses your daily credits)</span>
+                </div>
+                <p style="margin-top: 5px; font-size: 12px; color: var(--text-secondary);">Your API keys are stored locally in your browser and never sent to our servers.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelApiKey">Cancel</button>
+                <button class="btn btn-primary" id="saveApiKey">Save API Keys</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Credits/Payment Modal -->
+    <div class="modal-overlay" id="creditsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Buy API Credits</h3>
+                <button class="close-modal" id="closeCreditsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px;">Purchase credits to use the creator's DeepSeek API without setting up your own API key.</p>
+                
+                <div class="payment-plan" data-plan="basic">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Basic Plan</div>
+                        <div class="plan-price">$5.99</div>
+                    </div>
+                    <div class="plan-description">Perfect for occasional use</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            50 API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            10 credits daily renewal
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-plan" data-plan="pro">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Pro Plan</div>
+                        <div class="plan-price">$14.99</div>
+                    </div>
+                    <div class="plan-description">For regular developers</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            200 API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            25 credits daily renewal
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-plan" data-plan="unlimited">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Unlimited Plan</div>
+                        <div class="plan-price">$29.99</div>
+                    </div>
+                    <div class="plan-description">For power users</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Unlimited API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            50 credits daily renewal
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelCredits">Cancel</button>
+                <button class="btn btn-primary" id="purchaseCredits">Purchase</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Upload Modal -->
+    <div class="modal-overlay" id="imageUploadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Image</h3>
+                <button class="close-modal" id="closeImageModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="image-upload-container">
+                        <label class="image-upload-label" for="imageUploadInput">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <span>Click to upload or drag and drop</span>
+                            <small style="color: var(--text-secondary);">JPG, PNG, GIF, SVG</small>
+                        </label>
+                        <input type="file" id="imageUploadInput" class="image-upload-input" accept="image/*">
+                    </div>
+                    <img src="" alt="Uploaded image preview" id="uploadedImagePreview" class="uploaded-image-preview">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelImageUpload">Cancel</button>
+                <button class="btn btn-primary" id="confirmImageUpload">Apply Animation</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Animation Canvas -->
+    <canvas id="animationCanvas" class="animation-canvas"></canvas>
+<!-- Add this to the HTML section, perhaps in the header or alongside other controls -->
+<div class="image-control-panel">
+    <label for="imageCountInput">Number of Images:</label>
+    <input type="number" id="imageCountInput" min="2" max="10" value="5" class="form-input">
+    <button class="btn btn-primary" id="applyImageCount">Apply</button>
+</div>
+
+<!-- Add this to the HTML viewer section to display processed images -->
+<div class="processed-images-container" id="processedImagesContainer">
+    <!-- Processed images will be displayed here -->
+</div>
+    <script>
+       
+       document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const htmlEditor = document.getElementById('htmlEditor');
+    const cssEditor = document.getElementById('cssEditor');
+    const jsEditor = document.getElementById('jsEditor');
+    const htmlOutput = document.getElementById('htmlOutput');
+    const jsOutput = document.getElementById('jsOutput');
+    const runCodeBtn = document.getElementById('runCode');
+    const refreshPreviewBtn = document.getElementById('refreshPreview');
+    const imageUploadBtn = document.getElementById('imageUploadBtn');
+    const imageUploadModal = document.getElementById('imageUploadModal');
+    const closeImageModalBtn = document.getElementById('closeImageModal');
+    const cancelImageUploadBtn = document.getElementById('cancelImageUpload');
+    const imageUploadInput = document.getElementById('imageUploadInput');
+    const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+    const confirmImageUploadBtn = document.getElementById('confirmImageUpload');
+    const processedImagesContainer = document.getElementById('processedImagesContainer');
+    const imageCountInput = document.getElementById('imageCountInput');
+    const applyImageCountBtn = document.getElementById('applyImageCount');
+    if (localStorage.getItem('htmlCode')) {
+    htmlEditor.value = localStorage.getItem('htmlCode');
+  }
+  if (localStorage.getItem('cssCode')) {
+    cssEditor.value = localStorage.getItem('cssCode');
+  }
+  if (localStorage.getItem('jsCode')) {
+    jsEditor.value = localStorage.getItem('jsCode');
+  }
+  htmlEditor.addEventListener('input', () => {
+  localStorage.setItem('htmlCode', htmlEditor.value);
+});
+cssEditor.addEventListener('input', () => {
+  localStorage.setItem('cssCode', cssEditor.value);
+});
+jsEditor.addEventListener('input', () => {
+  localStorage.setItem('jsCode', jsEditor.value);
+});
+    // Worker variables
+    let imageWorker = null;
+    let originalImageData = null;
+    let selectedRegions = null;
+    let animationFrameId = null;
+    let workerActive = false;
+    let canvas = null;
+    let ctx = null;
+    
+    // Set default JS code for the worker - this will be used in the main page, not in the worker
+    jsEditor.value = `// This is the worker code that will process the image
+// Global constants
+const DEFAULT_DANCE_CYCLE = 1;
+const DEFAULT_LIP_AMPLITUDE = 15;
+const DEFAULT_ITERATIONS = 120;
+
+// Physics parameters
+const LARGE_PARTICLE_GRAVITY = 0.25;
+const SMALL_PARTICLE_GRAVITY = 0.45;
+const LARGE_DRAG_COEFFICIENT = 0.05;
+const SMALL_DRAG_COEFFICIENT = 0.02;
+const TERMINAL_VELOCITY = 3;
+
+// Animation state
+let currentIteration = 0;
+let particles = []; // Store particles globally in the worker
+let animationPhase = 0; // 0 = initial 3 particles, 1 = explosion
+
+// Vibrant Holi festival colors
+const COLORS = [
+    {r: 255, g: 23, b: 68, a: 255},   // Red #FF1744
+    {r: 255, g: 234, b: 0, a: 255},   // Yellow #FFEA00
+    {r: 0, g: 230, b: 118, a: 255},   // Green #00E676
+    {r: 41, g: 121, b: 255, a: 255},  // Blue #2979FF
+    {r: 213, g: 0, b: 249, a: 255},   // Purple #D500F9
+    {r: 255, g: 145, b: 0, a: 255},   // Orange #FF9100
+    {r: 240, g: 98, b: 146, a: 255},  // Pink #F06292
+    {r: 24, g: 255, b: 255, a: 255}   // Cyan #18FFFF
+];
+
+// Particle counts
+const LARGE_PARTICLE_COUNT = 300; // Increased for more dramatic explosion
+const SMALL_PARTICLE_COUNT = 500; // Increased for more dramatic explosion
+const FRAME_RATE = 30; // Frames per second
+const PHASE_ONE_DURATION = 3 * FRAME_RATE; // 3 seconds with 3 particles
+
+function createTransparentImageData(width, height) {
+    return new ImageData(
+        new Uint8ClampedArray(width * height * 4),
+        width,
+        height
+    );
+}
+
+self.onmessage = function(e) {
+    const { 
+        imageData, 
+        selectedRegions, 
+        value,
+        value5: iterations = DEFAULT_ITERATIONS,
+        currentIteration: iteration = 0,
+        reset 
+    } = e.data;
+
+    try {
+        if (reset) {
+            currentIteration = iteration;
+            particles = []; // Reset particles on reset
+            animationPhase = iteration >= PHASE_ONE_DURATION ? 1 : 0; // Set phase based on iteration
+        }
+
+        let resultImageData;
+        let progress;
+
+        if (selectedRegions?.length > 0 && selectedRegions[0]?.length > 0) {
+            resultImageData = applyColorBurstEffect(imageData, selectedRegions, value);
+            currentIteration = (currentIteration + 1);
+
+            if (currentIteration >= iterations) {
+                currentIteration = 0;
+                animationPhase = 0; // Reset to initial phase
+                particles = []; // Reset particles
+            }
+
+            progress = currentIteration / iterations;
+        } else {
+            resultImageData = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+            progress = 1;
+        }
+
+        self.postMessage({
+            segmentedImages: [resultImageData],
+            isComplete: true,
+            iteration: currentIteration,
+            progress
+        }, [resultImageData.data.buffer]);
+    } catch (error) {
+        self.postMessage({
+            error: error.message,
+            isComplete: true
+        });
+    }
+};
+
+function applyColorBurstEffect(imageData, selectedRegions, intensityValue) {
+    // Create a copy of the original image data to work with
+    const resultImageData = new ImageData(
+        new Uint8ClampedArray(imageData.data),
+        imageData.width,
+        imageData.height
+    );
+    
+    // Canvas dimensions
+    const width = imageData.width;
+    const height = imageData.height;
+    
+    // Center point (origin of the burst)
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Animation parameters
+    const danceCycle = DEFAULT_DANCE_CYCLE || 1;
+    const intensity = (DEFAULT_LIP_AMPLITUDE || 15) * (intensityValue || 1);
+    
+    // Check if we need to change animation phase
+    if (currentIteration === PHASE_ONE_DURATION) {
+        animationPhase = 1; // Switch to explosion phase
+        particles = []; // Clear existing particles
+    }
+    
+    // Create particles based on the animation phase
+    if (particles.length === 0) {
+        if (animationPhase === 0) {
+            // Phase 1: Create only 3 revolving particles
+            initializeThreeRevolvingParticles(centerX, centerY);
+        } else {
+            // Phase 2: Create explosion particles
+            initializeExplosionParticles(width, height, centerX, centerY);
+        }
+    }
+    
+    // Update and draw all particles
+    updateAndDrawAllParticles(resultImageData, width, height);
+    
+    return resultImageData;
+}
+
+function initializeThreeRevolvingParticles(centerX, centerY) {
+    // Create 3 particles that revolve around each other
+    const colors = [
+        COLORS[0], // Red
+        COLORS[2], // Green
+        COLORS[3]  // Blue
+    ];
+    
+    const radius = 30; // Distance from center
+    const angularSpacing = Math.PI * 2 / 3; // 120 degrees apart
+    
+    for (let i = 0; i < 3; i++) {
+        const angle = i * angularSpacing;
+        const size = 15; // Larger size for visibility
+        
+        particles.push({
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius,
+            vx: 0, // Will be controlled by update function
+            vy: 0,
+            size,
+            color: colors[i],
+            opacity: 1.0,
+            isCircular: true,
+            rotation: 0,
+            rotationSpeed: 0.1,
+            gravity: 0, // No gravity for revolving particles
+            drag: 0,    // No drag for revolving particles
+            type: 'revolving',
+            orbitRadius: radius,
+            orbitAngle: angle,
+            orbitSpeed: 0.05, // Speed of rotation
+            index: i
+        });
+    }
+}
+
+function initializeExplosionParticles(width, height, centerX, centerY) {
+    // Create large powder particles (confetti)
+    for (let i = 0; i < LARGE_PARTICLE_COUNT; i++) {
+        const isCircular = Math.random() < 0.7; // 70% chance of being circular
+        const size = Math.random() * 7 + 5; // Size between 5-12 pixels (bigger for more impact)
+        const angle = Math.random() * Math.PI * 2; // Random direction
+        const speed = Math.random() * 15 + 10; // Higher speed for explosion
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const rotation = Math.random() * Math.PI * 2; // Initial rotation
+        const rotationSpeed = (Math.random() - 0.5) * 0.2; // Faster rotation
+        
+        // All particles start from center for explosion effect
+        const startX = centerX;
+        const startY = centerY;
+        
+        particles.push({
+            x: startX,
+            y: startY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size,
+            color,
+            opacity: 0.9 + Math.random() * 0.1, // Higher opacity for vibrancy
+            isCircular,
+            rotation,
+            rotationSpeed,
+            gravity: LARGE_PARTICLE_GRAVITY * (0.8 + Math.random() * 0.4), 
+            drag: LARGE_DRAG_COEFFICIENT * (0.9 + Math.random() * 0.2),
+            type: 'large',
+            noiseLevel: Math.random(),
+            matteFactor: 0.8 + Math.random() * 0.2,
+            scaleY: 1,
+            randomModifier: Math.random() * 100,
+            // Travel much farther for whole screen coverage
+            lifespan: 500 + Math.random() * 300
+        });
+    }
+    
+    // Create small dust particles (sequins)
+    for (let i = 0; i < SMALL_PARTICLE_COUNT; i++) {
+        const size = Math.random() * 3 + 1; // Slightly larger small particles
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 20 + 15; // Much faster for explosion
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        
+        particles.push({
+            x: centerX,
+            y: centerY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size,
+            color,
+            opacity: 0.8 + Math.random() * 0.2,
+            isCircular: true,
+            gravity: SMALL_PARTICLE_GRAVITY * (0.9 + Math.random() * 0.2),
+            drag: SMALL_DRAG_COEFFICIENT * (0.9 + Math.random() * 0.2),
+            type: 'small',
+            grainFactor: 0.85 + Math.random() * 0.15,
+            // Travel farther for whole screen coverage
+            lifespan: 400 + Math.random() * 200
+        });
+    }
+}
+
+function updateAndDrawAllParticles(imageData, width, height) {
+    for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        
+        // Special update for revolving particles in phase 1
+        if (animationPhase === 0 && p.type === 'revolving') {
+            updateRevolvingParticle(p, width, height);
+        } else {
+            // Standard physics for explosion particles
+            // Apply gravity
+            p.vy += p.gravity;
+            
+            // Air resistance (drag)
+            p.vx *= (1 - p.drag);
+            p.vy *= (1 - p.drag);
+            
+            // Apply terminal velocity
+            const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            if (speed > TERMINAL_VELOCITY) {
+                p.vx = (p.vx / speed) * TERMINAL_VELOCITY;
+                p.vy = (p.vy / speed) * TERMINAL_VELOCITY;
+            }
+            
+            // Add random movement for naturalistic powder effect
+            if (Math.random() > 0.9) {
+                p.vx += (Math.random() - 0.5) * 0.5;
+                p.vy += (Math.random() - 0.5) * 0.5;
+            }
+            
+            // Update position
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            // Update rotation for large particles (confetti effect)
+            if (p.type === 'large') {
+                p.rotation += p.rotationSpeed;
+                
+                // Update 3D scale effect (simulating tumbling in air)
+                p.scaleY = Math.max(0.1, Math.cos((p.y + p.randomModifier) * 0.09) * p.matteFactor);
+            }
+            
+            // Fade particles out over time, slower for explosion phase
+            p.opacity -= animationPhase === 1 ? 
+                (p.type === 'large' ? 0.003 : 0.005) : 
+                (p.type === 'large' ? 0.006 : 0.01);
+            
+            // Decrease lifespan in explosion phase
+            if (animationPhase === 1 && p.lifespan) {
+                p.lifespan--;
+            }
+        }
+        
+        // Skip drawing if particle is invisible
+        if (p.opacity <= 0.05) continue;
+        
+        // Draw the particle
+        drawParticle(imageData, p);
+        
+        // Remove particles that are out of bounds, completely faded, or expired lifespan
+        if (p.x < -50 || p.x > width + 50 || 
+            p.y < -50 || p.y > height + 50 || 
+            p.opacity <= 0.05 ||
+            (animationPhase === 1 && p.lifespan <= 0)) {
+            particles.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+function updateRevolvingParticle(particle, width, height) {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Update orbit angle
+    particle.orbitAngle += particle.orbitSpeed;
+    
+    // Calculate new position based on orbit
+    particle.x = centerX + Math.cos(particle.orbitAngle) * particle.orbitRadius;
+    particle.y = centerY + Math.sin(particle.orbitAngle) * particle.orbitRadius;
+    
+    // Add subtle pulsing size effect
+    const pulseFactor = Math.sin(currentIteration * 0.1) * 2;
+    particle.size = 15 + pulseFactor;
+    
+    // Add orbit wobble effect
+    particle.orbitRadius += Math.sin(currentIteration * 0.2) * 0.5;
+    
+    // Ensure radius stays within bounds
+    particle.orbitRadius = Math.max(25, Math.min(35, particle.orbitRadius));
+    
+    // Rotate the particle
+    particle.rotation += particle.rotationSpeed;
+    
+    // Make particles pulse in opacity slightly
+    particle.opacity = 0.9 + Math.sin(currentIteration * 0.15 + particle.index) * 0.1;
+}
+
+function drawParticle(imageData, particle) {
+    const { x, y, size, color, opacity, isCircular, rotation, type, scaleY } = particle;
+    const width = imageData.width;
+    const height = imageData.height;
+    
+    // Adjusted size for scale effect (for large particles)
+    const adjustedSizeX = size;
+    const adjustedSizeY = type === 'large' ? size * scaleY : size;
+    
+    // Calculate drawing bounds with scale consideration
+    const left = Math.max(0, Math.floor(x - adjustedSizeX));
+    const right = Math.min(width - 1, Math.floor(x + adjustedSizeX));
+    const top = Math.max(0, Math.floor(y - adjustedSizeY));
+    const bottom = Math.min(height - 1, Math.floor(y + adjustedSizeY));
+    
+    // Enhanced particle rendering for revolving particles
+    if (type === 'revolving') {
+        // Create a glow effect for revolving particles
+        const glowRadius = size * 1.5;
+        const glowLeft = Math.max(0, Math.floor(x - glowRadius));
+        const glowRight = Math.min(width - 1, Math.floor(x + glowRadius));
+        const glowTop = Math.max(0, Math.floor(y - glowRadius));
+        const glowBottom = Math.min(height - 1, Math.floor(y + glowRadius));
+        
+        // Draw glow
+        for (let py = glowTop; py <= glowBottom; py++) {
+            for (let px = glowLeft; px <= glowRight; px++) {
+                const dx = px - x;
+                const dy = py - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance <= glowRadius) {
+                    const glowIntensity = Math.pow(1 - distance / glowRadius, 2) * 0.5;
+                    
+                    const index = (py * width + px) * 4;
+                    
+                    // Apply glow with particle color
+                    imageData.data[index] = Math.round(
+                        (color.r * glowIntensity + imageData.data[index] * (1 - glowIntensity))
+                    );
+                    imageData.data[index + 1] = Math.round(
+                        (color.g * glowIntensity + imageData.data[index + 1] * (1 - glowIntensity))
+                    );
+                    imageData.data[index + 2] = Math.round(
+                        (color.b * glowIntensity + imageData.data[index + 2] * (1 - glowIntensity))
+                    );
+                }
+            }
+        }
+    }
+    
+    // Draw the particle with enhanced rendering techniques
+    for (let py = top; py <= bottom; py++) {
+        for (let px = left; px <= right; px++) {
+            // Calculate distance from center of particle
+            const dx = px - x;
+            const dy = py - y;
+            
+            let inside = false;
+            let edgeFactor = 0;
+            
+            if (isCircular) {
+                // For circular particles
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Scale the y-distance for 3D effect
+                const scaledDistance = Math.sqrt(dx * dx + (dy / (type === 'large' ? scaleY : 1)) * (dy / (type === 'large' ? scaleY : 1)));
+                
+                inside = scaledDistance <= adjustedSizeX;
+                
+                // Soft edge calculation
+                if (inside) {
+                    edgeFactor = Math.min(1, (adjustedSizeX - scaledDistance) / adjustedSizeX);
+                    edgeFactor = Math.pow(edgeFactor, 1.5); // More natural falloff
+                }
+            } else {
+                // For irregular polygonal particles (simplified as rotated rectangles)
+                // Rotate the point around particle center
+                const cos = Math.cos(rotation);
+                const sin = Math.sin(rotation);
+                const rotatedX = dx * cos - dy * sin;
+                const rotatedY = dx * sin + dy * cos;
+                
+                // Check if point is inside rotated rectangle with scaling
+                const halfWidth = adjustedSizeX * 0.8;
+                const halfHeight = adjustedSizeY * 1.2;
+                
+                inside = Math.abs(rotatedX) <= halfWidth && Math.abs(rotatedY) <= halfHeight;
+                
+                // Soft edge calculation for polygons
+                if (inside) {
+                    const distFromEdgeX = halfWidth - Math.abs(rotatedX);
+                    const distFromEdgeY = halfHeight - Math.abs(rotatedY);
+                    const minDist = Math.min(distFromEdgeX, distFromEdgeY);
+                    edgeFactor = Math.min(1, minDist / (halfWidth * 0.2));
+                    edgeFactor = Math.pow(edgeFactor, 1.3); // More natural falloff
+                }
+            }
+            
+            // Apply soft edge and opacity
+            if (inside && edgeFactor > 0) {
+                // Enhanced opacity for revolving particles
+                const particleOpacity = type === 'revolving' ? 
+                    opacity * edgeFactor * 1.5 : // Brighter for revolving particles
+                    opacity * edgeFactor;
+                
+                // Calculate pixel index
+                const index = (py * width + px) * 4;
+                
+                // Get particle color
+                const r = color.r;
+                const g = color.g;
+                const b = color.b;
+                
+                // Enhanced blending with existing image
+                imageData.data[index] = Math.round(
+                    (r * particleOpacity + imageData.data[index] * (1 - particleOpacity))
+                );
+                imageData.data[index + 1] = Math.round(
+                    (g * particleOpacity + imageData.data[index + 1] * (1 - particleOpacity))
+                );
+                imageData.data[index + 2] = Math.round(
+                    (b * particleOpacity + imageData.data[index + 2] * (1 - particleOpacity))
+                );
+                
+                // Alpha channel handling for better compositing
+                imageData.data[index + 3] = Math.min(255, 
+                    imageData.data[index + 3] + (particleOpacity * 255 * (1 - imageData.data[index + 3]/255))
+                );
+                
+                // Add texture detail to larger particles (powder grains effect)
+                if (type === 'large' && particle.noiseLevel > 0.6 && Math.random() < 0.3) {
+                    addTextureDetail(imageData, px, py, width, r, g, b, particleOpacity);
+                }
+                
+                // Add sparkle effect for revolving particles
+                if (type === 'revolving' && Math.random() < 0.05) {
+                    addSparkleEffect(imageData, px, py, width, r, g, b);
+                }
+            }
+        }
+    }
+}
+
+function addTextureDetail(imageData, x, y, width, r, g, b, opacity) {
+    // Add a small texture detail (grain) to the particle
+    const dotSize = Math.random() * 0.8;
+    const dotX = x + (Math.random() - 0.5);
+    const dotY = y + (Math.random() - 0.5);
+    
+    // Ensure dot is within image bounds
+    if (dotX >= 0 && dotX < width && dotY >= 0 && dotY < imageData.height) {
+        const dotIndex = (Math.floor(dotY) * width + Math.floor(dotX)) * 4;
+        
+        // Make the dot slightly lighter or darker
+        const adjustment = Math.random() < 0.5 ? 30 : -30;
+        const adjustmentOpacity = opacity * 0.7;
+        
+        imageData.data[dotIndex] = Math.min(255, Math.max(0, 
+            (imageData.data[dotIndex] + adjustment * adjustmentOpacity)));
+        imageData.data[dotIndex + 1] = Math.min(255, Math.max(0, 
+            (imageData.data[dotIndex + 1] + adjustment * adjustmentOpacity)));
+        imageData.data[dotIndex + 2] = Math.min(255, Math.max(0, 
+            (imageData.data[dotIndex + 2] + adjustment * adjustmentOpacity)));
+    }
+}
+
+function addSparkleEffect(imageData, x, y, width, r, g, b) {
+    // Add a sparkle effect (small bright point)
+    const sparkleSize = 1;
+    
+    // Ensure pixel is within image bounds
+    if (x >= 0 && x < width && y >= 0 && y < imageData.height) {
+        const index = (y * width + x) * 4;
+        
+        // Make the sparkle much brighter
+        imageData.data[index] = Math.min(255, r + 150);
+        imageData.data[index + 1] = Math.min(255, g + 150);
+        imageData.data[index + 2] = Math.min(255, b + 150);
+        imageData.data[index + 3] = 255;
+    }
+}`;
+    
+    // Initialize tabs
+    setupTabs();
+    
+    // Run code button click handler
+    runCodeBtn.addEventListener('click', runCode);
+    refreshPreviewBtn.addEventListener('click', runCode);
+    
+    // Image upload modal handling
+    imageUploadBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'flex';
+    });
+    
+    closeImageModalBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'none';
+    });
+    
+    cancelImageUploadBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'none';
+    });
+    
+    // Image upload handling
+    imageUploadInput.addEventListener('change', handleImageUpload);
+    confirmImageUploadBtn.addEventListener('click', applyImageAnimation);
+    applyImageCountBtn.addEventListener('click', updateProcessedImagesGrid);
+    
+    // Function to set up tab switching
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('[data-tab-content]');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    if (content.getAttribute('data-tab-content') === tabName) {
+                        content.style.display = 'block';
+                    } else {
+                        content.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+    
+    function runCode() {
+    // First, terminate any existing worker
+    if (imageWorker) {
+        imageWorker.terminate();
+        imageWorker = null;
+        workerActive = false;
+    }
+    
+    // Clear any existing animation frame
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
+    // Get the code from each editor
+    const htmlCode = htmlEditor.value;
+    const cssCode = cssEditor.value;
+    const jsCode = jsEditor.value;
+    
+    // Clear the output area
+    htmlOutput.innerHTML = '';
+    jsOutput.innerHTML = '';
+    
+    try {
+        // Set the preview area background to black
+        htmlOutput.style.backgroundColor = '#252526';
+        htmlOutput.style.padding = '20px';
+        htmlOutput.style.minHeight = '240px';
+        htmlOutput.style.display = 'flex';
+        htmlOutput.style.justifyContent = 'center';
+        htmlOutput.style.alignItems = 'center';
+        
+        // Create canvas for animation
+        canvas = document.createElement('canvas');
+        canvas.width = 360;
+        canvas.height = 180;
+        canvas.style.backgroundColor = '#252526';
+        canvas.style.display = 'block';
+        canvas.style.border = 'none';
+        htmlOutput.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        
+        // Draw black background and white text
+        ctx.fillStyle = '#252526';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Upload an image to apply animation', canvas.width / 2, canvas.height / 2);
+        
+        // Style the console output
+        jsOutput.innerHTML = 'Please upload an image to start animation';
+        jsOutput.style.color = '#d4d4d4';
+        jsOutput.style.backgroundColor = '#1e1e1e';
+        jsOutput.style.padding = '10px 15px';
+        jsOutput.style.margin = '0';
+        jsOutput.style.fontFamily = 'Arial, sans-serif';
+        jsOutput.style.fontSize = '14px';
+        jsOutput.style.borderTop = '1px solid #333';
+        jsOutput.style.height = 'auto';
+    } catch (error) {
+        jsOutput.innerHTML = `Error: ${error.message}`;
+        jsOutput.style.color = '#ff6b6b';
+        jsOutput.style.backgroundColor = '#1e1e1e';
+        jsOutput.style.padding = '10px 15px';
+        jsOutput.style.margin = '0';
+        jsOutput.style.fontFamily = 'Arial, sans-serif';
+        jsOutput.style.fontSize = '14px';
+        console.error('Error:', error);
+    }
+}
+
+    // Handle image upload
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Display the image preview
+            uploadedImagePreview.src = e.target.result;
+            uploadedImagePreview.style.display = 'block';
+            localStorage.setItem('uploadedImage', e.target.result);
+
+            // Store the image data for use with the worker
+            const img = new Image();
+            img.onload = function() {
+                // Create a canvas element
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Draw the image on the canvas
+                tempCtx.drawImage(img, 0, 0);
+                
+                // Get the image data
+                originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
+                
+                // Create a default selection region (all pixels)
+                selectedRegions = [Array(img.width * img.height).fill(1)];
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Apply the animation to the uploaded image
+    function applyImageAnimation() {
+        if (!originalImageData) {
+            jsOutput.innerHTML = 'Error: No image uploaded';
+            return;
+        }
+        
+        // Close the modal
+        document.getElementById('imageUploadModal').style.display = 'none';
+        
+        // Create or update the canvas in the output
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            htmlOutput.appendChild(canvas);
+        }
+        
+        // Set canvas dimensions
+        canvas.width = originalImageData.width;
+        canvas.height = originalImageData.height;
+        canvas.style.maxWidth = '100%';
+        canvas.style.border = '1px solid #444';
+        canvas.style.borderRadius = '8px';
+        
+        // Get canvas context
+        ctx = canvas.getContext('2d');
+        
+        // Draw the original image first
+        ctx.putImageData(originalImageData, 0, 0);
+        
+        // Create the worker and start animation
+        createWorker();
+    }
+    
+    // Create a worker from the JS editor code
+    function createWorker() {
+        // Terminate existing worker if it exists
+        if (imageWorker) {
+            imageWorker.terminate();
+        }
+        
+        try {
+            // Get the worker code from the editor
+            const workerCode = jsEditor.value;
+            
+            // Create a blob URL from the worker code
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            
+            // Create the worker
+            imageWorker = new Worker(workerUrl);
+            
+            // Set up the message handler
+            imageWorker.onmessage = function(e) {
+                const { segmentedImages, error, progress } = e.data;
+                
+                if (error) {
+                    jsOutput.innerHTML = `Worker Error: ${error}`;
+                    console.error('Worker error:', error);
+                    return;
+                }
+                
+                if (segmentedImages && segmentedImages.length > 0) {
+                    // Draw the segmented image to the canvas
+                    ctx.putImageData(segmentedImages[0], 0, 0);
+                    
+                    // Update progress if available
+                    if (progress !== undefined) {
+                        const progressPercent = Math.round(progress * 100);
+                        jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
+                    }
+                }
+            };
+            
+            workerActive = true;
+            jsOutput.innerHTML = 'Worker created successfully. Starting animation...';
+            
+            // Start the animation
+            startAnimation();
+        } catch (error) {
+            jsOutput.innerHTML = `Error creating worker: ${error.message}`;
+            console.error('Worker creation error:', error);
+        }
+    }
+    
+
+    function startAnimation() {
+    if (!imageWorker || !originalImageData || !workerActive) return;
+    
+    // Define the animation frame function
+    const animate = () => {
+        if (!workerActive) return;
+        
+        // Get the image count from the input
+        const imageCount = parseInt(imageCountInput.value, 10) || 5;
+        
+        // Calculate how many iterations to use based on image count
+        // This scales the animation duration with the number of images
+        const iterations = imageCount * 24; // 24 frames per image
+        
+        // Send data to the worker
+        imageWorker.postMessage({
+            imageData: originalImageData,
+            selectedRegions: selectedRegions,
+            value: 1,
+            value5: iterations, // Override the default iterations with our calculated value
+            reset: false
+        });
+        
+        // Request the next frame
+        animationFrameId = requestAnimationFrame(animate);
+    };
+    
+    // Start the animation
+    animate();
+}
+
+
+    // Update the processed images grid
+    function updateProcessedImagesGrid() {
+        if (!originalImageData) return;
+        
+        // Clear the container
+        processedImagesContainer.innerHTML = '';
+        
+        // Get the number of images to generate
+        const imageCount = parseInt(imageCountInput.value, 10) || 5;
+        
+        // Create header
+        const header = document.createElement('h3');
+        header.textContent = 'Processed Images';
+        processedImagesContainer.appendChild(header);
+        
+        // Create grid container
+        const grid = document.createElement('div');
+        grid.className = 'processed-images-grid';
+        processedImagesContainer.appendChild(grid);
+        
+        // Create canvas elements for each processed image
+        for (let i = 0; i < imageCount; i++) {
+            // Create container for the image
+            const container = document.createElement('div');
+            container.className = 'processed-image-container';
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = originalImageData.width;
+            canvas.height = originalImageData.height;
+            
+            // Create label
+            const label = document.createElement('div');
+            label.className = 'image-label';
+            label.textContent = `Frame ${i + 1}`;
+            
+            // Append to container
+            container.appendChild(canvas);
+            container.appendChild(label);
+            
+            // Append to grid
+            grid.appendChild(container);
+            
+            // Get canvas context
+            const ctx = canvas.getContext('2d');
+            
+            // Create a temporary worker for each frame
+            processImageWithWorker(ctx, i, imageCount);
+        }
+    }
+    
+    
+function processImageWithWorker(ctx, frameIndex, totalFrames) {
+    if (!originalImageData) return;
+    
+    // Create a temporary worker
+    try {
+        const workerCode = jsEditor.value;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        
+        const tempWorker = new Worker(workerUrl);
+        
+        // Set up the message handler
+        tempWorker.onmessage = function(e) {
+            const { segmentedImages, error } = e.data;
+            
+            if (error) {
+                console.error('Worker error:', error);
+                return;
+            }
+            
+            if (segmentedImages && segmentedImages.length > 0) {
+                // Draw the segmented image to the canvas
+                ctx.putImageData(segmentedImages[0], 0, 0);
+                
+                // Terminate the worker
+                tempWorker.terminate();
+            }
+        };
+        
+        // Calculate the progress value for this frame
+        const progress = frameIndex / (totalFrames - 1);
+        
+        // Calculate total iterations based on image count
+        const iterations = totalFrames * 24; // 24 frames per image
+        
+        // Send data to the worker
+        tempWorker.postMessage({
+            imageData: originalImageData,
+            selectedRegions: selectedRegions,
+            value: 1,
+            value5: iterations, // Pass total iterations based on image count
+            currentIteration: Math.floor(progress * iterations), // Set current iteration based on frame index
+            reset: true
+        });
+    } catch (error) {
+        console.error('Worker creation error:', error);
+    }
+}
+
+    
+    // Set some initial HTML
+    htmlEditor.value = `<
+
+
+`;
+
+
+    // Initialize by running the code once
+    runCode();
+});
+    
+
+    </script>
+</body>
+</html>
