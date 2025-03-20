@@ -1,0 +1,2335 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor with AI APIs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+        }
+        
+        :root {
+            --primary-color: #7e57c2;
+            --primary-hover: #6a3fba;
+            --bg-dark: #1a1a1a;
+            --bg-medium: #252526;
+            --bg-light: #333333;
+            --text-light: #f5f5f5;
+            --text-secondary: #aaaaaa;
+            --border-color: #444444;
+            --html-color: #ff5252;
+            --css-color: #42a5f5;
+            --js-color: #ffca28;
+            --run-color: #4caf50;
+            --input-bg: #2d2d2d;
+            --deepseek-color: #00b4d8;
+            --deepseek-hover: #0096c7;
+            --credit-color: #ffa726;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: var(--bg-medium);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .logo svg {
+            color: var(--primary-color);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 12px;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-hover);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-run {
+            background-color: var(--run-color);
+            border-color: #388e3c;
+        }
+        
+        .btn-run:hover {
+            background-color: #388e3c;
+        }
+        
+        .btn-deepseek {
+            background-color: var(--deepseek-color);
+            border-color: var(--deepseek-hover);
+        }
+        
+        .btn-deepseek:hover {
+            background-color: var(--deepseek-hover);
+        }
+        
+        .editors-container {
+            display: flex;
+            height: 50%;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .editor-column {
+            flex: 1;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .editor-column:last-child {
+            border-right: none;
+        }
+        
+        .editor-header {
+            background-color: var(--bg-medium);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .language-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .editor-tools {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .editor {
+            flex: 1;
+            background-color: var(--bg-dark);
+            overflow: auto;
+            position: relative;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            color: var(--text-light);
+            border: none;
+            resize: none;
+            outline: none;
+            padding: 16px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .textarea-line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 30px;
+            height: 100%;
+            background-color: var(--bg-medium);
+            color: var(--text-secondary);
+            text-align: right;
+            padding: 16px 5px;
+            user-select: none;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .viewers-container {
+            display: flex;
+            height: 50%;
+        }
+        
+        .html-viewer-column {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .css-js-viewer-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-header {
+            background-color: var(--bg-medium);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .viewer {
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .html-viewer {
+            background-color: white;
+            color: black;
+            padding: 20px;
+        }
+        
+        .css-viewer, .js-viewer {
+            background-color: var(--bg-medium);
+            color: var(--text-light);
+            padding: 10px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        
+        .js-viewer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .html-btn { 
+            background-color: var(--html-color); 
+            color: white;
+        }
+        
+        .html-btn:hover {
+            background-color: #e53935;
+        }
+        
+        .css-btn { 
+            background-color: var(--css-color); 
+            color: white;
+        }
+        
+        .css-btn:hover {
+            background-color: #1e88e5;
+        }
+        
+        .js-btn { 
+            background-color: var(--js-color); 
+            color: black; 
+        }
+        
+        .js-btn:hover {
+            background-color: #ffb300;
+        }
+        
+        .deepseek-btn {
+            background-color: var(--deepseek-color);
+            color: white;
+        }
+        
+        .deepseek-btn:hover {
+            background-color: var(--deepseek-hover);
+        }
+        
+        /* API Key Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .modal {
+            background-color: var(--bg-medium);
+            border-radius: 8px;
+            padding: 20px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Status indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #f44336;
+        }
+        
+        .status-dot.active {
+            background-color: #4caf50;
+        }
+        
+        /* Tab styles */
+        .tab-switcher {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-medium);
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border-right: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .tab.active {
+            background-color: var(--bg-dark);
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: var(--bg-light);
+        }
+        
+        /* Line numbers */
+        textarea {
+            padding-left: 45px; /* Make room for line numbers */
+        }
+        
+        /* Image Upload Styles */
+        .image-upload-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 10px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            background-color: var(--bg-light);
+        }
+        
+        .image-upload-container:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .image-upload-label {
+            cursor: pointer;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+        }
+        
+        .image-upload-input {
+            display: none;
+        }
+        
+        .uploaded-image-preview {
+            max-width: 70%;
+            max-height: 70%;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        /* Image Animation Canvas */
+        .animation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        /* Credit system styles */
+        .credit-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 15px;
+            background-color: var(--bg-light);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .credit-icon {
+            color: var(--credit-color);
+        }
+        
+        .credit-count {
+            font-weight: 500;
+            color: var(--text-light);
+        }
+        
+        /* Payment Modal */
+        .payment-plan {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .payment-plan:hover, .payment-plan.selected {
+            border-color: var(--primary-color);
+            background-color: var(--bg-medium);
+        }
+        
+        .payment-plan.selected {
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+        
+        .payment-plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .plan-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .plan-price {
+            font-weight: 500;
+            color: var(--credit-color);
+        }
+        
+        .plan-features {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .plan-feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-light);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--text-light);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .toggle-label {
+            margin-left: 10px;
+        }
+
+        .ai-selection {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-selection-label {
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .ai-provider {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .provider-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .provider-btn.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-hover);
+        }
+        
+        .provider-btn.deepseek-provider.active {
+            background-color: var(--deepseek-color);
+            border-color: var(--deepseek-hover);
+        }
+        
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .editors-container, .viewers-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .editor-column, .html-viewer-column, .css-js-viewer-column {
+                height: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+
+            
+            .language-tag span {
+                display: none;
+            }
+            
+            .actions {
+                flex-wrap: wrap;
+            }
+            
+            .credit-container {
+                margin-right: 0;
+                margin-bottom: 8px;
+            }
+        }
+        .image-control-panel {
+    background-color: var(--bg-medium);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    
+    /* New positioning properties to move it to the top */
+    position: relative;
+    order: -1;
+    z-index: 10;
+    /* Change where it appears in the DOM order */
+
+}
+.image-control-panel label {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.image-control-panel input {
+    width: 60px;
+    padding: 6px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-light);
+}
+
+/* Add button styling for consistency */
+.image-control-panel .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+
+.processed-images-container {
+    padding: 15px;
+    background-color: var(--bg-light);
+    border-radius: 6px;
+    margin: 15px 0;
+}
+
+.processed-images-container h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: var(--text-light);
+}
+ 
+.claude-api-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            border: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+.processed-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+}
+
+.processed-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.processed-image-container canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.image-label {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+            </svg>
+            <span>AI Code Editor</span>
+        </div>
+        <div class="actions">
+            <div class="image-control-panel">
+                <label for="imageCountInput">Number of Images:</label>
+                <input type="number" id="imageCountInput" min="2" max="10" value="5" class="form-input">
+                <button class="btn btn-primary" id="applyImageCount">Apply</button>
+            </div>
+            <div class="credit-container">
+                <svg class="credit-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span class="credit-count" id="creditCount">10 credits</span>
+                <button class="btn btn-primary" id="buyCreditsBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Buy
+                </button>
+            </div>
+            <div class="api-status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="apiStatusText">API Key Not Set</span>
+            </div>
+            <button class="btn" id="imageUploadBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                Upload Image
+            </button>
+ 
+            <button class="btn btn-run" id="runCode">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Run Code
+            </button>
+        </div>
+    </div>
+    
+    <div class="editors-container">
+        <!-- HTML Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header html-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--html-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    <span>HTML</span>
+                </div>
+                <div class="editor-tools">
+      
+                    <button class="claude-api-btn deepseek-btn" id="htmlDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="htmlLineNumbers"></div>
+                <textarea id="htmlEditor" placeholder="Type your HTML here..."></textarea>
+            </div>
+        </div>
+        
+        <!-- CSS Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header css-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--css-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <span>CSS</span>
+                </div>
+                <div class="editor-tools">
+           
+                    <button class="claude-api-btn deepseek-btn" id="cssDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="cssLineNumbers"></div>
+                <textarea id="cssEditor" placeholder="Type your CSS here..."></textarea>
+            </div>
+        </div>
+        
+        <!-- JS Editor Column -->
+        <div class="editor-column">
+            <div class="editor-header js-column-header">
+                <div class="language-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--js-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M16 8v8M8 16v-3a2 2 0 0 1 4 0v3"></path>
+                    </svg>
+                    <span>JavaScript</span>
+                </div>
+                <div class="editor-tools">
+        
+                    <button class="claude-api-btn deepseek-btn" id="jsDeepseekBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        
+                    </button>
+                </div>
+            </div>
+            <div class="editor">
+                <div class="textarea-line-numbers" id="jsLineNumbers"></div>
+                <textarea id="jsEditor" placeholder="Type your JavaScript here..."></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="viewers-container">
+        <!-- HTML Viewer -->
+        <div class="html-viewer-column">
+            <div class="viewer-header">
+                <span>Preview</span>
+                <button class="btn btn-run" id="refreshPreview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+            <div class="viewer html-viewer" id="htmlOutput">
+                <!-- HTML output will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- CSS & JS Viewers -->
+        <div class="css-js-viewer-column">
+            <div class="tab-switcher">
+                <div class="tab active" data-tab="console">Console</div>
+                <div class="tab" data-tab="css">CSS Output</div>
+            </div>
+            <div class="viewer js-viewer" id="jsOutput" data-tab-content="console">
+                <!-- JS output/console will be displayed here -->
+            </div>
+            <div class="viewer css-viewer" id="cssOutput" data-tab-content="css" style="display: none;">
+                <!-- CSS output will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div class="modal-overlay" id="apiKeyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">AI API Settings</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label class="form-label" for="deepseekApiKey">DeepSeek API Key</label>
+                    <input type="password" id="deepseekApiKey" class="form-input" placeholder="Enter your DeepSeek API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="deepseekModelSelect">DeepSeek Model</label>
+                    <select id="deepseekModelSelect" class="form-input">
+                        <option value="deepseek-coder">DeepSeek Coder</option>
+                        <option value="deepseek-chat">DeepSeek Chat</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="useCreatorApiKey">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Use creator's DeepSeek API (uses your daily credits)</span>
+                </div>
+                <p style="margin-top: 5px; font-size: 12px; color: var(--text-secondary);">Your API keys are stored locally in your browser and never sent to our servers.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelApiKey">Cancel</button>
+                <button class="btn btn-primary" id="saveApiKey">Save API Keys</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Credits/Payment Modal -->
+    <div class="modal-overlay" id="creditsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Buy API Credits</h3>
+                <button class="close-modal" id="closeCreditsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px;">Purchase credits to use the creator's DeepSeek API without setting up your own API key.</p>
+                
+                <div class="payment-plan" data-plan="basic">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Basic Plan</div>
+                        <div class="plan-price">$5.99</div>
+                    </div>
+                    <div class="plan-description">Perfect for occasional use</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            50 API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Standard processing priority
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-plan" data-plan="pro">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Pro Plan</div>
+                        <div class="plan-price">$14.99</div>
+                    </div>
+                    <div class="plan-description">For regular developers</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            200 API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            25 credits daily renewal
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-plan" data-plan="unlimited">
+                    <div class="payment-plan-header">
+                        <div class="plan-name">Unlimited Plan</div>
+                        <div class="plan-price">$29.99</div>
+                    </div>
+                    <div class="plan-description">For power users</div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Unlimited API calls
+                        </div>
+                        <div class="plan-feature">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            50 credits daily renewal
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelCredits">Cancel</button>
+                <button class="btn btn-primary" id="purchaseCredits">Purchase</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Upload Modal -->
+    <div class="modal-overlay" id="imageUploadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Image</h3>
+                <button class="close-modal" id="closeImageModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="image-upload-container">
+                        <label class="image-upload-label" for="imageUploadInput">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <span>Click to upload or drag and drop</span>
+                            <small style="color: var(--text-secondary);">JPG, PNG, GIF, SVG</small>
+                        </label>
+                        <input type="file" id="imageUploadInput" class="image-upload-input" accept="image/*">
+                    </div>
+                    <img src="" alt="Uploaded image preview" id="uploadedImagePreview" class="uploaded-image-preview">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelImageUpload">Cancel</button>
+                <button class="btn btn-primary" id="confirmImageUpload">Apply Animation</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Animation Canvas -->
+    <canvas id="animationCanvas" class="animation-canvas"></canvas>
+<!-- Add this to the HTML section, perhaps in the header or alongside other controls -->
+
+
+<!-- Add this to the HTML viewer section to display processed images -->
+<div class="processed-images-container" id="processedImagesContainer" style= "display:none">
+    <!-- Processed images will be displayed here -->
+</div>
+    <script>
+
+const urlParams = new URLSearchParams(window.location.search);
+// Update the payment success handler
+if (urlParams.get('payment_status') === 'success') {
+    // Get the plan from localStorage (saved before redirect)
+    const planType = localStorage.getItem('selectedPlan');
+    
+    // Add credits based on plan and check the payment link used
+    let creditAmount = 10;
+    const paymentSource = urlParams.get('payment_source') || '';
+    
+    if (paymentSource.includes('pdX51NlsWQG0xc14FX9AM')) {
+        // This was the lower-priced payment link
+        switch(planType) {
+            case 'basic': creditAmount = 50; break;
+            default: creditAmount = 50; break;
+        }
+    } else {
+        // This was the higher-priced payment link
+        switch(planType) {
+            case 'pro': creditAmount = 200; break;
+            case 'unlimited': creditAmount = 999; break;
+            default: creditAmount = 200; break;
+        }
+    }
+    
+    // Get current credits and add new ones
+    const currentCredits = parseInt(localStorage.getItem('credits') || '0');
+    const newCredits = currentCredits + creditAmount;
+    
+    // Update credits
+    localStorage.setItem('credits', newCredits);
+    document.getElementById('creditCount').textContent = `${newCredits} credits`;
+    
+    // Show success message
+    alert('Payment successful! Credits added to your account.');
+    
+    // Clear the payment status from URL to prevent duplicate credits
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+if (urlParams.get('payment_status') === 'failed') {
+    alert('Payment failed. Please try again or contact support.');
+    // Clear the payment status from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+let imageWorker = null;
+let canvas = null;
+let ctx = null;
+let originalImageData = null;
+let selectedRegions = null;
+let animationFrameId = null;
+let workerActive = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const htmlEditor = document.getElementById('htmlEditor');
+    const cssEditor = document.getElementById('cssEditor');
+    const jsEditor = document.getElementById('jsEditor');
+    const htmlOutput = document.getElementById('htmlOutput');
+    const cssOutput = document.getElementById('cssOutput');
+    const jsOutput = document.getElementById('jsOutput');
+    const runCodeBtn = document.getElementById('runCode');
+    const refreshPreviewBtn = document.getElementById('refreshPreview');
+    const imageUploadBtn = document.getElementById('imageUploadBtn');
+    const imageUploadModal = document.getElementById('imageUploadModal');
+    const closeImageModalBtn = document.getElementById('closeImageModal');
+    const cancelImageUploadBtn = document.getElementById('cancelImageUpload');
+    const imageUploadInput = document.getElementById('imageUploadInput');
+    const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+    const confirmImageUploadBtn = document.getElementById('confirmImageUpload');
+    const processedImagesContainer = document.getElementById('processedImagesContainer');
+    const imageCountInput = document.getElementById('imageCountInput');
+    const applyImageCountBtn = document.getElementById('applyImageCount');
+
+    // Load saved code from localStorage
+    if (localStorage.getItem('htmlCode')) {
+        htmlEditor.value = localStorage.getItem('htmlCode');
+    }
+    if (localStorage.getItem('cssCode')) {
+        cssEditor.value = localStorage.getItem('cssCode');
+    }
+    if (localStorage.getItem('jsCode')) {
+        jsEditor.value = localStorage.getItem('jsCode');
+    }
+
+    // Save code to localStorage on input
+    htmlEditor.addEventListener('input', () => {
+        localStorage.setItem('htmlCode', htmlEditor.value);
+    });
+    cssEditor.addEventListener('input', () => {
+        localStorage.setItem('cssCode', cssEditor.value);
+    });
+    jsEditor.addEventListener('input', () => {
+        localStorage.setItem('jsCode', jsEditor.value);
+    });
+
+    // Initialize tabs
+    setupTabs();
+
+    // Run code button click handler
+    runCodeBtn.addEventListener('click', runCode);
+    refreshPreviewBtn.addEventListener('click', runCode);
+
+    // Image upload modal handling
+    imageUploadBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'flex';
+    });
+
+    closeImageModalBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'none';
+    });
+
+    cancelImageUploadBtn.addEventListener('click', function() {
+        imageUploadModal.style.display = 'none';
+    });
+
+    // Image upload handling
+    imageUploadInput.addEventListener('change', handleImageUpload);
+    confirmImageUploadBtn.addEventListener('click', applyImageAnimation);
+    applyImageCountBtn.addEventListener('click', updateProcessedImagesGrid);
+
+    // Function to set up tab switching
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('[data-tab-content]');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.getAttribute('data-tab');
+
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    if (content.getAttribute('data-tab-content') === tabName) {
+                        content.style.display = 'block';
+                    } else {
+                        content.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    function runCode() {
+        // First, terminate any existing worker
+        if (imageWorker) {
+            imageWorker.terminate();
+            imageWorker = null;
+            workerActive = false;
+        }
+
+        // Clear any existing animation frame
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+
+        // Get the code from each editor
+        const htmlCode = htmlEditor.value;
+        const cssCode = cssEditor.value;
+        const jsCode = jsEditor.value;
+
+        // Clear the output area
+        htmlOutput.innerHTML = '';
+        jsOutput.innerHTML = '';
+        cssOutput.innerHTML = cssCode; // Display CSS in the CSS output
+
+        try {
+            // Create a container for our HTML content
+            const htmlContainer = document.createElement('div');
+            htmlContainer.innerHTML = htmlCode;
+            
+            // Apply CSS to the HTML output
+            const styleElement = document.createElement('style');
+            styleElement.textContent = cssCode;
+            htmlOutput.appendChild(styleElement);
+            htmlOutput.appendChild(htmlContainer);
+
+            // Check if there's a saved image and create a canvas for it
+// Inside the runCode function, where it loads the saved image:
+if (localStorage.getItem('uploadedImage')) {
+    const img = new Image();
+    img.onload = function() {
+        canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.style.maxWidth = '100%';
+        canvas.style.border = '1px solid #444';
+        canvas.style.borderRadius = '8px';
+        
+        // Find a suitable container in the HTML for the canvas
+        // If there's a div with id="canvas-container", use that, otherwise append to htmlOutput
+        const canvasContainer = htmlContainer.querySelector('#canvas-container') || htmlOutput;
+        canvasContainer.appendChild(canvas);
+        
+        ctx = canvas.getContext('2d');
+        
+        // Create a temporary canvas to get the image data
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, 0, 0);
+        
+        originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
+        
+        // Create the proper selectedRegions array format
+        // This should be an array containing a single array of pixel indices
+        const pixelIndices = [];
+        // Add all non-transparent pixels to the region
+        const imgData = originalImageData.data;
+        const width = originalImageData.width;
+        const height = originalImageData.height;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const idx = (y * width + x);
+                const alphaIdx = idx * 4 + 3; // Alpha channel index
+                
+                // Include pixel if it's not completely transparent
+                if (imgData[alphaIdx] > 0) {
+                    pixelIndices.push(idx);
+                }
+            }
+        }
+        
+        // Set selectedRegions as an array containing our array of indices
+        selectedRegions = [pixelIndices];
+        console.log('Created selectedRegions:', selectedRegions);
+        
+        // Draw the original image first
+        ctx.putImageData(originalImageData, 0, 0);
+        
+        // Create worker and start animation
+        createWorker();
+    };
+    img.src = localStorage.getItem('uploadedImage');
+}
+            
+            else {
+           
+           
+                // No image uploaded yet, create a placeholder canvas
+                canvas = document.createElement('canvas');
+                canvas.width = 360;
+                canvas.height = 180;
+                canvas.style.backgroundColor = '#252526';
+                canvas.style.maxWidth = '100%';
+                canvas.style.border = '1px solid #444';
+                canvas.style.borderRadius = '8px';
+                
+                // Find a suitable container in the HTML for the canvas
+                const canvasContainer = htmlContainer.querySelector('#canvas-container') || htmlOutput;
+                canvasContainer.appendChild(canvas);
+                
+                ctx = canvas.getContext('2d');
+                
+                // Draw black background and white text
+                ctx.fillStyle = '#252526';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Upload an image to apply animation', canvas.width / 2, canvas.height / 2);
+                
+                jsOutput.innerHTML = 'Please upload an image to start animation';
+            }
+        } catch (error) {
+            jsOutput.innerHTML = `Error: ${error.message}`;
+            console.error('Error:', error);
+        }
+    }
+
+
+
+
+    // Handle image upload
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Display the image preview
+        uploadedImagePreview.src = e.target.result;
+        uploadedImagePreview.style.display = 'block';
+        localStorage.setItem('uploadedImage', e.target.result);
+
+        // Store the image data for use with the worker
+        const img = new Image();
+        img.onload = function() {
+            // Create a canvas element
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Draw the image on the canvas
+            tempCtx.drawImage(img, 0, 0);
+
+            // Get the image data
+            originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
+
+            // Create the proper selectedRegions array format
+            // This should be an array containing a single array of pixel indices
+            const pixelIndices = [];
+            // Add all non-transparent pixels to the region
+            const imgData = originalImageData.data;
+            const width = originalImageData.width;
+            const height = originalImageData.height;
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x);
+                    const alphaIdx = idx * 4 + 3; // Alpha channel index
+                    
+                    // Include pixel if it's not completely transparent
+                    if (imgData[alphaIdx] > 0) {
+                        pixelIndices.push(idx);
+                    }
+                }
+            }
+            
+            // Set selectedRegions as an array containing our array of indices
+            selectedRegions = [pixelIndices];
+            console.log('Created selectedRegions:', selectedRegions);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+    
+    // Apply the animation to the uploaded image
+    function applyImageAnimation() {
+        if (!originalImageData) {
+            jsOutput.innerHTML = 'Error: No image uploaded';
+            return;
+        }
+
+        // Close the modal
+        document.getElementById('imageUploadModal').style.display = 'none';
+
+        // Run the code to apply HTML and CSS
+        runCode();
+    }
+
+
+    function createWorker() {
+    // Terminate existing worker if it exists
+    if (imageWorker) {
+        imageWorker.terminate();
+    }
+
+    try {
+        // Get the worker code from the editor
+        const workerCode = jsEditor.value;
+
+        // Create a blob URL from the worker code
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+
+        // Create the worker
+        imageWorker = new Worker(workerUrl);
+
+        // Set up the message handler
+        imageWorker.onmessage = function(e) {
+            const { segmentedImages, error, progress } = e.data;
+
+            if (error) {
+                jsOutput.innerHTML = `Worker Error: ${error}`;
+                console.error('Worker error:', error);
+                return;
+            }
+
+            if (segmentedImages && segmentedImages.length > 0) {
+                // Draw the segmented image to the canvas
+                ctx.putImageData(segmentedImages[0], 0, 0);
+
+                // Update progress if available
+                if (progress !== undefined) {
+                    const progressPercent = Math.round(progress * 100);
+                    jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
+                }
+            }
+        };
+
+        workerActive = true;
+        jsOutput.innerHTML = 'Worker created successfully. Starting animation...';
+
+        // Start the animation
+        startAnimation();
+    } catch (error) {
+        jsOutput.innerHTML = `Error creating worker: ${error.message}`;
+        console.error('Worker creation error:', error);
+    }
+}
+
+
+
+
+function startAnimation() {
+    if (!imageWorker || !originalImageData || !workerActive) return;
+
+    // Define the animation frame function
+    const animate = () => {
+        if (!workerActive) return;
+
+        // Get the image count from the input
+        const imageCount = parseInt(imageCountInput.value, 10) || 5;
+
+        // Calculate how many iterations to use based on image count
+        // This scales the animation duration with the number of images
+        const iterations = imageCount * 24; // 24 frames per image
+
+        // Ensure selectedRegions is properly formatted
+        // Convert the selectedRegions into the format expected by the worker
+        let formattedSelectedRegions;
+        
+        if (!selectedRegions || !selectedRegions.length) {
+            // Create a default region that includes all pixels
+            const totalPixels = originalImageData.width * originalImageData.height;
+            const allPixelsRegion = [];
+            for (let i = 0; i < totalPixels; i++) {
+                allPixelsRegion.push(i);
+            }
+            formattedSelectedRegions = [allPixelsRegion];
+        } else {
+            // Convert the existing selectedRegions to proper format if needed
+            formattedSelectedRegions = selectedRegions;
+            
+            // If selectedRegions is already an array of pixel indices, wrap it in another array
+            if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
+                formattedSelectedRegions = [selectedRegions];
+            }
+            
+            // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
+            if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' && 
+                (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
+                const convertedRegions = [];
+                const region = [];
+                
+                for (let i = 0; i < selectedRegions[0].length; i++) {
+                    if (selectedRegions[0][i] === 1) {
+                        region.push(i);
+                    }
+                }
+                
+                convertedRegions.push(region);
+                formattedSelectedRegions = convertedRegions;
+            }
+        }
+
+        // Send data to the worker
+        imageWorker.postMessage({
+    imageData: originalImageData,
+    selectedRegions: selectedRegions, // Now correctly formatted
+    value: 1,
+    value5: iterations,
+    reset: false
+});
+
+        // Request the next frame
+        animationFrameId = requestAnimationFrame(animate);
+    };
+
+    // Start the animation
+    animate();
+}
+
+
+    // Update the processed images grid
+    function updateProcessedImagesGrid() {
+        if (!originalImageData) return;
+
+        // Clear the container
+        processedImagesContainer.innerHTML = '';
+
+        // Get the number of images to generate
+        const imageCount = parseInt(imageCountInput.value, 10) || 5;
+
+        // Create header
+        const header = document.createElement('h3');
+        header.textContent = 'Processed Images';
+        processedImagesContainer.appendChild(header);
+
+        // Create grid container
+        const grid = document.createElement('div');
+        grid.className = 'processed-images-grid';
+        processedImagesContainer.appendChild(grid);
+
+        // Create canvas elements for each processed image
+        for (let i = 0; i < imageCount; i++) {
+            // Create container for the image
+            const container = document.createElement('div');
+            container.className = 'processed-image-container';
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = originalImageData.width;
+            canvas.height = originalImageData.height;
+
+            // Create label
+            const label = document.createElement('div');
+            label.className = 'image-label';
+            label.textContent = `Frame ${i + 1}`;
+
+            // Append to container
+            container.appendChild(canvas);
+            container.appendChild(label);
+
+            // Append to grid
+            grid.appendChild(container);
+
+            // Get canvas context
+            const ctx = canvas.getContext('2d');
+
+            // Create a temporary worker for each frame
+            processImageWithWorker(ctx, i, imageCount);
+        }
+    }
+
+    function processImageWithWorker(ctx, frameIndex, totalFrames) {
+    if (!originalImageData) return;
+
+    // Create a temporary worker
+    try {
+        const workerCode = jsEditor.value;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+
+        const tempWorker = new Worker(workerUrl);
+
+        // Set up the message handler
+        tempWorker.onmessage = function(e) {
+            const { segmentedImages, error } = e.data;
+
+            if (error) {
+                console.error('Worker error:', error);
+                return;
+            }
+
+            if (segmentedImages && segmentedImages.length > 0) {
+                // Draw the segmented image to the canvas
+                ctx.putImageData(segmentedImages[0], 0, 0);
+
+                // Terminate the worker
+                tempWorker.terminate();
+            }
+        };
+
+        // Calculate the progress value for this frame
+        const progress = frameIndex / (totalFrames - 1);
+
+        // Calculate total iterations based on image count
+        const iterations = totalFrames * 24; // 24 frames per image
+
+        // Ensure selectedRegions is properly formatted
+        let formattedSelectedRegions;
+        
+        if (!selectedRegions || !selectedRegions.length) {
+            // Create a default region that includes all pixels
+            const totalPixels = originalImageData.width * originalImageData.height;
+            const allPixelsRegion = [];
+            for (let i = 0; i < totalPixels; i++) {
+                allPixelsRegion.push(i);
+            }
+            formattedSelectedRegions = [allPixelsRegion];
+        } else {
+            // Convert the existing selectedRegions to proper format if needed
+            formattedSelectedRegions = selectedRegions;
+            
+            // If selectedRegions is already an array of pixel indices, wrap it in another array
+            if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
+                formattedSelectedRegions = [selectedRegions];
+            }
+            
+            // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
+            if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' && 
+                (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
+                const convertedRegions = [];
+                const region = [];
+                
+                for (let i = 0; i < selectedRegions[0].length; i++) {
+                    if (selectedRegions[0][i] === 1) {
+                        region.push(i);
+                    }
+                }
+                
+                convertedRegions.push(region);
+                formattedSelectedRegions = convertedRegions;
+            }
+        }
+
+        // Send data to the worker
+        tempWorker.postMessage({
+    imageData: originalImageData,
+    selectedRegions: selectedRegions, // Now correctly formatted
+    value: 1,
+    value5: iterations,
+    currentIteration: Math.floor(progress * iterations),
+    reset: true
+});
+    } catch (error) {
+        console.error('Worker creation error:', error);
+    }
+}
+
+
+
+
+    // Initialize by running the code once
+    runCode();
+});
+// API Key Modal event listeners
+const apiKeyModal = document.getElementById('apiKeyModal');
+const closeModalBtn = document.getElementById('closeModal');
+
+
+
+closeModalBtn.addEventListener('click', function() {
+    apiKeyModal.style.display = 'none';
+});
+
+
+// Credits Modal event listeners
+const buyCreditsBtn = document.getElementById('buyCreditsBtn');
+const creditsModal = document.getElementById('creditsModal');
+const closeCreditsModalBtn = document.getElementById('closeCreditsModal');
+const cancelCreditsBtn = document.getElementById('cancelCredits');
+const purchaseCreditsBtn = document.getElementById('purchaseCredits');
+const paymentPlans = document.querySelectorAll('.payment-plan');
+
+buyCreditsBtn.addEventListener('click', function() {
+    creditsModal.style.display = 'flex';
+});
+
+closeCreditsModalBtn.addEventListener('click', function() {
+    creditsModal.style.display = 'none';
+});
+
+cancelCreditsBtn.addEventListener('click', function() {
+    creditsModal.style.display = 'none';
+});
+
+
+purchaseCreditsBtn.addEventListener('click', function() {
+    const selectedPlan = document.querySelector('.payment-plan.selected');
+    if (selectedPlan) {
+        const planType = selectedPlan.getAttribute('data-plan');
+        // Save selected plan to localStorage before redirect
+        localStorage.setItem('selectedPlan', planType);
+        
+        // Choose payment link based on plan
+        let paymentUrl;
+        if (planType === 'basic') {
+            // Lower-priced plan link
+            paymentUrl = 'https://checkout.dodopayments.com/buy/pdt_pdX51NlsWQG0xc14FX9AM?quantity=1';
+        } else {
+            // Higher-priced plan link (pro and unlimited)
+            paymentUrl = 'https://checkout.dodopayments.com/buy/pdt_QIW8J9Jozxx65k9awTQOe?quantity=1';
+        }
+        
+        // Redirect to appropriate Dodo Payments checkout
+        window.location.href = paymentUrl;
+    } else {
+        alert('Please select a plan');
+    }
+});
+
+
+
+// Add event listeners to payment plans for selection
+paymentPlans.forEach(plan => {
+    plan.addEventListener('click', function() {
+        paymentPlans.forEach(p => p.classList.remove('selected'));
+        this.classList.add('selected');
+    });
+});
+
+const htmlDeepseekBtn = document.getElementById('htmlDeepseekBtn');
+
+const cssDeepseekBtn = document.getElementById('cssDeepseekBtn');
+const jsDeepseekBtn = document.getElementById('jsDeepseekBtn');
+
+
+
+htmlDeepseekBtn.addEventListener('click', function() {
+    callAiApi('html', 'deepseek');
+});
+
+
+
+cssDeepseekBtn.addEventListener('click', function() {
+    callAiApi('css', 'deepseek');
+});
+
+
+jsDeepseekBtn.addEventListener('click', function() {
+    callAiApi('js', 'deepseek');
+});
+
+// Function to update API status indicator
+function updateApiStatus() {
+    const apiStatus = document.getElementById('apiStatus');
+    const apiStatusText = document.getElementById('apiStatusText');
+    
+    const deepseekApiKey = localStorage.getItem('deepseekApiKey');
+    const useCreatorApiKey = localStorage.getItem('useCreatorApiKey') === 'true';
+ 
+}
+
+
+// // Function to call AI API
+// function callAiApi(language, provider) {
+//     // Check if API key is set
+//     const apiKey = localStorage.getItem('deepseekApiKey');
+    
+//     const useCreatorApiKey = localStorage.getItem('useCreatorApiKey') === 'true';
+    
+//     // Check credits
+//     const credits = parseInt(localStorage.getItem('credits') || '10');
+//     if (credits <= 0 && useCreatorApiKey) {
+//         alert('You have no credits left. Please purchase more credits.');
+//         creditsModal.style.display = 'flex';
+//         return;
+//     }
+    
+//     // Get the current code from the editors
+//     const htmlCode = document.getElementById('htmlEditor').value;
+//     const cssCode = document.getElementById('cssEditor').value;
+//     const jsCode = document.getElementById('jsEditor').value;
+    
+//     // Get editor for the selected language
+//     const editor = document.getElementById(`${language}Editor`);
+//     const outputArea = document.getElementById('jsOutput');
+    
+//     // Show loading state
+//     outputArea.innerHTML = `Calling ${provider} API for ${language.toUpperCase()} code...`;
+
+//     // If using mocked response without server
+//     if (!useCreatorApiKey && !apiKey) {
+//         mockAiResponse(language, provider, editor, outputArea, credits);
+//         return;
+//     }
+    
+//     // Make a call to the Flask server
+//     fetch('http://127.0.0.1:5000/generate-code', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//             language: language,
+//             htmlCode: htmlCode,
+//             cssCode: cssCode,
+//             jsCode: jsCode
+//         }),
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         // Update the editor with the generated code
+//         editor.value = data.generatedCode;
+        
+//         // Trigger localStorage save
+//         editor.dispatchEvent(new Event('input'));
+        
+//         // Deduct credits if using creator's API
+//         if (useCreatorApiKey) {
+//             const newCredits = credits - 1;
+//             localStorage.setItem('credits', newCredits);
+//             document.getElementById('creditCount').textContent = `${newCredits} credits`;
+//         }
+        
+//         // Show success message
+//         outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider}`;
+        
+//         // Run the code to see changes
+//         document.getElementById('runCode').click();
+//     })
+//     .catch(error => {
+//         console.error('Error calling API:', error);
+//         outputArea.innerHTML = `Error: ${error.message}`;
+        
+//         // Fall back to mock response
+//         mockAiResponse(language, provider, editor, outputArea, credits);
+//     });
+// }
+
+
+function callAiApi(language, provider) {
+    // Check if API key is set
+    const apiKey = localStorage.getItem('deepseekApiKey');
+    console.log("API Key from localStorage:", apiKey);
+    
+    const useCreatorApiKey = localStorage.getItem('useCreatorApiKey') === 'true';
+    console.log("Using creator API key:", useCreatorApiKey);
+    
+    // Check credits
+    const credits = parseInt(localStorage.getItem('credits') || '10');
+    console.log("Current credits:", credits);
+    
+    // Get the current code from the editors
+    const htmlCode = document.getElementById('htmlEditor').value;
+    const cssCode = document.getElementById('cssEditor').value;
+    const jsCode = document.getElementById('jsEditor').value;
+    
+    // Get editor for the selected language
+    const editor = document.getElementById(`${language}Editor`);
+    const outputArea = document.getElementById('jsOutput');
+    
+    // Show loading state
+    outputArea.innerHTML = `Calling ${provider} API for ${language.toUpperCase()} code...`;
+
+    // IMPORTANT: Adding debug information to see which path we're taking
+    console.log("Mock condition check:", !useCreatorApiKey && !apiKey);
+
+    
+    console.log("Calling REAL Flask API");
+    
+    // Make a call to the Flask server
+    fetch('http://127.0.0.1:5000/generate-code', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            language: language,
+            htmlCode: htmlCode,
+            cssCode: cssCode,
+            jsCode: jsCode
+        }),
+    })
+    .then(response => {
+        console.log("Response received:", response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Data received:", data);
+        
+        let cleanedCode = data.generatedCode;
+        
+        // Remove ```javascript from the beginning if present
+        cleanedCode = cleanedCode.replace(/^```(javascript|js|html|css)\n/i, '');
+        
+        // Remove ``` from the end if present
+        cleanedCode = cleanedCode.replace(/\n```$/i, '');
+        
+        // Update the editor with the cleaned generated code
+        editor.value = cleanedCode;
+        
+        // Trigger localStorage save
+        editor.dispatchEvent(new Event('input'));
+        
+        // Deduct credits if using creator's API
+        if (useCreatorApiKey) {
+            const newCredits = credits - 1;
+            localStorage.setItem('credits', newCredits);
+            document.getElementById('creditCount').textContent = `${newCredits} credits`;
+        }
+        
+        // Show success message
+        outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider}`;
+        
+        // Run the code to see changes
+        document.getElementById('runCode').click();
+    })
+    .catch(error => {
+        console.error('Error calling API:', error);
+        outputArea.innerHTML = `Error: ${error.message}`;
+        
+        // Fall back to mock response
+        mockAiResponse(language, provider, editor, outputArea, credits);
+    });
+}
+
+// Function to provide mock AI responses when server is unavailable
+function mockAiResponse(language, provider, editor, outputArea, credits) {
+    setTimeout(() => {
+        // Update the editor with the "AI-generated" code
+        if (language === 'html') {
+            editor.value = `<div>
+  <h1>Dog Animation Showcase</h1>
+  <p>This is a sample dog animation demo</p>
+  <div id="canvas-container"></div>
+</div>`;
+        } else if (language === 'css') {
+            editor.value = `h1 {
+  color: #8B4513;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+p {
+  margin: 20px;
+  font-size: 16px;
+}
+#canvas-container {
+  border: 2px dashed #8B4513;
+  border-radius: 10px;
+  padding: 10px;
+}`;
+        } else if (language === 'js') {
+            editor.value = `// Dog Animation Worker
+self.onmessage = function(e) {
+  const { imageData, selectedRegions, value, value5, currentIteration, reset } = e.data;
+  
+  // Create a copy of the image data
+  const newData = new ImageData(
+    new Uint8ClampedArray(imageData.data),
+    imageData.width,
+    imageData.height
+  );
+  
+  // Use the iteration value (if provided) or calculate a time-based value
+  const iteration = currentIteration !== undefined 
+    ? currentIteration 
+    : Math.floor(Date.now() / 40) % value5;
+  
+  // Calculate the animation progress (0 to 1)
+  const progress = iteration / value5;
+  
+  // If we have no image yet, draw some dogs!
+  if (!selectedRegions || selectedRegions.length === 0) {
+    // Draw a simple dog silhouette
+    drawDogs(newData, progress);
+  } else {
+    // Process the selected regions with dog-like movements
+    if (selectedRegions && selectedRegions.length > 0) {
+      selectedRegions.forEach(region => {
+        region.forEach(pixelIndex => {
+          // Calculate the RGBA indices
+          const i = pixelIndex * 4;
+          
+          // Create a wagging tail effect based on progress
+          const wag = Math.sin(progress * Math.PI * 8 + pixelIndex * 0.001) * 20;
+          
+          // Apply dog-like colors (browns and tans)
+          newData.data[i] = Math.max(0, Math.min(255, imageData.data[i] + wag)); // R (more reddish)
+          newData.data[i+1] = Math.max(0, Math.min(255, imageData.data[i+1] - wag/2)); // G (less green)
+          newData.data[i+2] = Math.max(0, Math.min(255, imageData.data[i+2] - wag)); // B (less blue)
+        });
+      });
+    }
+  }
+  
+  // Send the processed image back to the main thread
+  self.postMessage({ 
+    segmentedImages: [newData],
+    progress: progress
+  });
+};
+
+// Function to draw dogs on the canvas when no image is provided
+function drawDogs(imageData, progress) {
+  const width = imageData.width;
+  const height = imageData.height;
+  
+  // Clear the canvas with a light blue background
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      imageData.data[i] = 200; // R
+      imageData.data[i+1] = 230; // G
+      imageData.data[i+2] = 255; // B
+      imageData.data[i+3] = 255; // A
+    }
+  }
+  
+  // Draw a simple dog (or multiple dogs)
+  const numDogs = 3;
+  for (let d = 0; d < numDogs; d++) {
+    // Dog position
+    const dogX = width * (0.2 + d * 0.3);
+    const dogY = height * 0.6;
+    const dogSize = Math.min(width, height) * 0.15;
+    
+    // Dog body movement
+    const bodyOffset = Math.sin(progress * Math.PI * 2 + d) * 5;
+    
+    // Draw dog body (brown ellipse)
+    drawEllipse(
+      imageData, 
+      dogX + bodyOffset, 
+      dogY, 
+      dogSize * 1.5, 
+      dogSize * 0.8, 
+      139, 69, 19, 255
+    );
+    
+    // Draw dog head (darker brown circle)
+    drawCircle(
+      imageData,
+      dogX + dogSize * 1.2 + bodyOffset,
+      dogY - dogSize * 0.3,
+      dogSize * 0.7,
+      101, 67, 33, 255
+    );
+    
+    // Draw tail (wagging)
+    const tailWag = Math.sin(progress * Math.PI * 8 + d * 2) * 0.5;
+    drawTail(
+      imageData,
+      dogX - dogSize * 1.2 + bodyOffset,
+      dogY - dogSize * 0.2,
+      dogSize * 0.8,
+      tailWag,
+      139, 69, 19, 255
+    );
+    
+    // Draw ears
+    drawEllipse(
+      imageData,
+      dogX + dogSize * 1.4 + bodyOffset,
+      dogY - dogSize * 0.8,
+      dogSize * 0.4,
+      dogSize * 0.6,
+      101, 67, 33, 255
+    );
+    
+    drawEllipse(
+      imageData,
+      dogX + dogSize * 1.0 + bodyOffset,
+      dogY - dogSize * 0.8,
+      dogSize * 0.4,
+      dogSize * 0.6,
+      101, 67, 33, 255
+    );
+    
+    // Draw eyes
+    const eyeBlink = Math.sin(progress * Math.PI * 0.5) > 0.9 ? 0.1 : 1;
+    drawCircle(
+      imageData,
+      dogX + dogSize * 1.4 + bodyOffset,
+      dogY - dogSize * 0.4,
+      dogSize * 0.1,
+      0, 0, 0, 255
+    );
+    
+    drawEllipse(
+      imageData,
+      dogX + dogSize * 1.0 + bodyOffset,
+      dogY - dogSize * 0.4,
+      dogSize * 0.1,
+      dogSize * 0.1 * eyeBlink,
+      0, 0, 0, 255
+    );
+    
+    // Draw snout
+    drawEllipse(
+      imageData,
+      dogX + dogSize * 1.7 + bodyOffset,
+      dogY - dogSize * 0.2,
+      dogSize * 0.4,
+      dogSize * 0.3,
+      160, 82, 45, 255
+    );
+    
+    // Draw nose
+    drawCircle(
+      imageData,
+      dogX + dogSize * 1.9 + bodyOffset,
+      dogY - dogSize * 0.25,
+      dogSize * 0.1,
+      0, 0, 0, 255
+    );
+    
+    // Draw legs
+    const legOffset = Math.sin(progress * Math.PI * 4 + d) * 3;
+    
+    // Front legs
+    drawRect(
+      imageData,
+      dogX + dogSize * 0.7 + bodyOffset,
+      dogY + dogSize * 0.6,
+      dogSize * 0.2,
+      dogSize * 0.8 + legOffset,
+      139, 69, 19, 255
+    );
+    
+    drawRect(
+      imageData,
+      dogX + dogSize * 1.1 + bodyOffset,
+      dogY + dogSize * 0.6,
+      dogSize * 0.2,
+      dogSize * 0.8 - legOffset,
+      139, 69, 19, 255
+    );
+    
+    // Back legs
+    drawRect(
+      imageData,
+      dogX - dogSize * 0.6 + bodyOffset,
+      dogY + dogSize * 0.6,
+      dogSize * 0.2,
+      dogSize * 0.8 - legOffset,
+      139, 69, 19, 255
+    );
+    
+    drawRect(
+      imageData,
+      dogX - dogSize * 0.2 + bodyOffset,
+      dogY + dogSize * 0.6,
+      dogSize * 0.2,
+      dogSize * 0.8 + legOffset,
+      139, 69, 19, 255
+    );
+  }
+}
+
+// Helper function to draw a circle
+function drawCircle(imageData, centerX, centerY, radius, r, g, b, a) {
+  const width = imageData.width;
+  const radiusSquared = radius * radius;
+  
+  for (let y = Math.max(0, Math.floor(centerY - radius)); 
+       y < Math.min(imageData.height, Math.ceil(centerY + radius)); 
+       y++) {
+    for (let x = Math.max(0, Math.floor(centerX - radius)); 
+         x < Math.min(imageData.width, Math.ceil(centerX + radius)); 
+         x++) {
+      const distSquared = (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY);
+      if (distSquared <= radiusSquared) {
+        const i = (y * width + x) * 4;
+        imageData.data[i] = r;
+        imageData.data[i+1] = g;
+        imageData.data[i+2] = b;
+        imageData.data[i+3] = a;
+      }
+    }
+  }
+}
+
+// Helper function to draw an ellipse
+function drawEllipse(imageData, centerX, centerY, radiusX, radiusY, r, g, b, a) {
+  const width = imageData.width;
+  
+  for (let y = Math.max(0, Math.floor(centerY - radiusY)); 
+       y < Math.min(imageData.height, Math.ceil(centerY + radiusY)); 
+       y++) {
+    for (let x = Math.max(0, Math.floor(centerX - radiusX)); 
+         x < Math.min(imageData.width, Math.ceil(centerX + radiusX)); 
+         x++) {
+      const normalizedX = (x - centerX) / radiusX;
+      const normalizedY = (y - centerY) / radiusY;
+      const distSquared = normalizedX * normalizedX + normalizedY * normalizedY;
+      
+      if (distSquared <= 1) {
+        const i = (y * width + x) * 4;
+        imageData.data[i] = r;
+        imageData.data[i+1] = g;
+        imageData.data[i+2] = b;
+        imageData.data[i+3] = a;
+      }
+    }
+  }
+}
+
+// Helper function to draw a rectangle
+function drawRect(imageData, x, y, width, height, r, g, b, a) {
+  const imgWidth = imageData.width;
+  
+  for (let yy = Math.max(0, Math.floor(y)); 
+       yy < Math.min(imageData.height, Math.ceil(y + height)); 
+       yy++) {
+    for (let xx = Math.max(0, Math.floor(x)); 
+         xx < Math.min(imageData.width, Math.ceil(x + width)); 
+         xx++) {
+      const i = (yy * imgWidth + xx) * 4;
+      imageData.data[i] = r;
+      imageData.data[i+1] = g;
+      imageData.data[i+2] = b;
+      imageData.data[i+3] = a;
+    }
+  }
+}
+
+// Helper function to draw a tail
+function drawTail(imageData, x, y, length, wag, r, g, b, a) {
+  const width = imageData.width;
+  const tailThickness = length * 0.3;
+  
+  // Calculate the tail curve
+  const tailEndX = x - length * Math.cos(wag);
+  const tailEndY = y - length * Math.sin(wag);
+  
+  // Draw a line from start to end
+  const steps = Math.ceil(length * 2);
+  for (let i = 0; i < steps; i++) {
+    const t = i / steps;
+    const currentX = x + (tailEndX - x) * t;
+    const currentY = y + (tailEndY - y) * t;
+    
+    // Draw a circle at this point
+    const radius = tailThickness * (1 - t * 0.7); // Tail gets thinner
+    drawCircle(imageData, currentX, currentY, radius, r, g, b, a);
+  }
+}`;
+        }
+        
+        // Trigger localStorage save
+        editor.dispatchEvent(new Event('input'));
+        
+        // Deduct credits if using creator's API
+        if (credits > 0 && localStorage.getItem('useCreatorApiKey') === 'true') {
+            const newCredits = credits - 1;
+            localStorage.setItem('credits', newCredits);
+            document.getElementById('creditCount').textContent = `${newCredits} credits`;
+        }
+        
+        // Show success message
+        outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider} (mock response)`;
+        
+        // Run the code to see changes
+        document.getElementById('runCode').click();
+    }, 1500);
+}
+
+
+// Initialize API status on page load
+updateApiStatus();
+
+// Initialize credit count
+const savedCredits = localStorage.getItem('credits');
+if (savedCredits) {
+    document.getElementById('creditCount').textContent = `${savedCredits} credits`;
+}
+
+
+    </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>
