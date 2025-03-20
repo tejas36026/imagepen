@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +29,9 @@
             --deepseek-color: #00b4d8;
             --deepseek-hover: #0096c7;
             --credit-color: #ffa726;
+            --scrollbar-track: #1e1e1e;
+            --scrollbar-thumb: #555555;
+            --scrollbar-thumb-hover: #777777;
         }
         
         body {
@@ -39,6 +41,31 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+        
+        /* Custom Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+        
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
         }
         
         .header {
@@ -463,11 +490,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-right: 15px;
-            background-color: var(--bg-light);
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .credit-icon {
@@ -477,6 +501,7 @@
         .credit-count {
             font-weight: 500;
             color: var(--text-light);
+            flex-grow: 1;
         }
         
         /* Payment Modal */
@@ -629,8 +654,6 @@
                 border-bottom: 1px solid var(--border-color);
             }
             
-
-            
             .language-tag span {
                 display: none;
             }
@@ -638,63 +661,53 @@
             .actions {
                 flex-wrap: wrap;
             }
-            
-            .credit-container {
-                margin-right: 0;
-                margin-bottom: 8px;
-            }
         }
+        
         .image-control-panel {
-    background-color: var(--bg-medium);
-    padding: 10px 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border-bottom: 1px solid var(--border-color);
-    
-    /* New positioning properties to move it to the top */
-    position: relative;
-    order: -1;
-    z-index: 10;
-    /* Change where it appears in the DOM order */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .image-control-panel label {
+            font-size: 14px;
+            color: var(--text-light);
+            font-weight: 500;
+            white-space: nowrap;
+        }
 
-}
-.image-control-panel label {
-    font-size: 14px;
-    color: var(--text-light);
-    font-weight: 500;
-}
+        .image-control-panel input {
+            width: 60px;
+            padding: 6px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-light);
+        }
 
-.image-control-panel input {
-    width: 60px;
-    padding: 6px;
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    color: var(--text-light);
-}
+        /* Add button styling for consistency */
+        .image-control-panel .btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
 
-/* Add button styling for consistency */
-.image-control-panel .btn {
-    padding: 6px 12px;
-    font-size: 13px;
-}
+        .processed-images-container {
+            padding: 15px;
+            background-color: var(--bg-light);
+            border-radius: 6px;
+            margin: 15px 0;
+        }
 
-
-.processed-images-container {
-    padding: 15px;
-    background-color: var(--bg-light);
-    border-radius: 6px;
-    margin: 15px 0;
-}
-
-.processed-images-container h3 {
-    font-size: 16px;
-    margin-bottom: 10px;
-    color: var(--text-light);
-}
- 
-.claude-api-btn {
+        .processed-images-container h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+         
+        .claude-api-btn {
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
@@ -706,30 +719,101 @@
             gap: 6px;
             transition: all 0.2s ease;
         }
-.processed-images-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-}
+        
+        .processed-images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
 
-.processed-image-container {
+        .processed-image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .processed-image-container canvas {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .image-label {
+            margin-top: 5px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Prompt input styles */
+        .prompt-container {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    background-color: var(--bg-medium);
+    flex-grow: 1;
+    justify-content: center; /* Centers content horizontally */
+    margin: 0 auto; /* Centers the container itself if it has a width */
+    /* You may also want to add a max-width if appropriate */
 }
+        .prompt-input {
+            flex: 1;
+            padding: 12px 12px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-light);
+            font-size: 14px;
+            width: 300px;
+            justify-content: center; /* Centers content horizontally */
+    margin: 0 auto; 
+        }
 
-.processed-image-container canvas {
-    width: 100%;
-    height: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-
-.image-label {
-    margin-top: 5px;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
+        .prompt-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            justify-content: center; /* Centers content horizontally */
+    margin: 0 auto; 
+        }
+        
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: relative;
+            display: inline-block;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hamburger-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .hamburger-btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .hamburger-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 300px;
+            background-color: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            display: none;
+        }
+        
+        .hamburger-dropdown.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -745,27 +829,17 @@
             <span>AI Code Editor</span>
         </div>
         <div class="actions">
-            <div class="image-control-panel">
-                <label for="imageCountInput">Number of Images:</label>
-                <input type="number" id="imageCountInput" min="2" max="10" value="5" class="form-input">
-                <button class="btn btn-primary" id="applyImageCount">Apply</button>
-            </div>
-            <div class="credit-container">
-                <svg class="credit-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-                <span class="credit-count" id="creditCount">10 credits</span>
-                <button class="btn btn-primary" id="buyCreditsBtn">
+            <div class="prompt-container">
+                <input type="text" id="promptInput" class="prompt-input" placeholder="Enter your prompt for the AI (optional)">
+                <button class="btn btn-primary" id="magicBtn">Generate
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
-                    Buy
                 </button>
             </div>
-            <div class="api-status">
+
+            <div class="api-status" style = "display: none;">
                 <div class="status-dot" id="apiStatus"></div>
                 <span id="apiStatusText">API Key Not Set</span>
             </div>
@@ -777,8 +851,40 @@
                 </svg>
                 Upload Image
             </button>
- 
-            <button class="btn btn-run" id="runCode">
+                        
+            <div class="hamburger-menu">
+                <div class="hamburger-btn" id="hamburgerBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </div>
+                <div class="hamburger-dropdown" id="hamburgerDropdown">
+                    <div class="image-control-panel">
+                        <label for="imageCountInput">Number of Images:</label>
+                        <input type="number" id="imageCountInput" min="2" max="10" value="5" class="form-input">
+                        <button class="btn btn-primary" id="applyImageCount">Apply</button>
+                    </div>
+                    <div class="credit-container">
+                        <svg class="credit-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <span class="credit-count" id="creditCount">10 credits</span>
+                        <button class="btn btn-primary" id="buyCreditsBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Buy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-run" id="runCode" style = "display: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
@@ -800,7 +906,7 @@
                 </div>
                 <div class="editor-tools">
       
-                    <button class="claude-api-btn deepseek-btn" id="htmlDeepseekBtn">
+                    <button class="claude-api-btn deepseek-btn" style= "display: none;" id="htmlDeepseekBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -827,7 +933,7 @@
                 </div>
                 <div class="editor-tools">
            
-                    <button class="claude-api-btn deepseek-btn" id="cssDeepseekBtn">
+                    <button class="claude-api-btn deepseek-btn" style= "display: none;" id="cssDeepseekBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -854,7 +960,7 @@
                 </div>
                 <div class="editor-tools">
         
-                    <button class="claude-api-btn deepseek-btn" id="jsDeepseekBtn">
+                    <button class="claude-api-btn deepseek-btn" id="jsDeepseekBtn"> Generate
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -965,7 +1071,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
-                            10 credits daily renewal
+                            Standard processing priority
                         </div>
                     </div>
                 </div>
@@ -1054,863 +1160,46 @@
     
     <!-- Animation Canvas -->
     <canvas id="animationCanvas" class="animation-canvas"></canvas>
-<!-- Add this to the HTML section, perhaps in the header or alongside other controls -->
-
-
-<!-- Add this to the HTML viewer section to display processed images -->
 <div class="processed-images-container" id="processedImagesContainer" style= "display:none">
     <!-- Processed images will be displayed here -->
 </div>
-    <script>
 
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('payment_status') === 'success') {
-    // Get the plan from localStorage (saved before redirect)
-    const planType = localStorage.getItem('selectedPlan');
-    
-    // Add credits based on plan
-    let creditAmount = 10;
-    switch(planType) {
-        case 'basic': creditAmount = 50; break;
-        case 'pro': creditAmount = 200; break;
-        case 'unlimited': creditAmount = 999; break;
-    }
-    
-    // Get current credits and add new ones
-    const currentCredits = parseInt(localStorage.getItem('credits') || '0');
-    const newCredits = currentCredits + creditAmount;
-    
-    // Update credits
-    localStorage.setItem('credits', newCredits);
-    document.getElementById('creditCount').textContent = `${newCredits} credits`;
-    
-    // Show success message
-    alert('Payment successful! Credits added to your account.');
-    
-    // Clear the payment status from URL to prevent duplicate credits
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-if (urlParams.get('payment_status') === 'failed') {
-    alert('Payment failed. Please try again or contact support.');
-    // Clear the payment status from URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-let imageWorker = null;
-let canvas = null;
-let ctx = null;
-let originalImageData = null;
-let selectedRegions = null;
-let animationFrameId = null;
-let workerActive = false;
-
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const htmlEditor = document.getElementById('htmlEditor');
-    const cssEditor = document.getElementById('cssEditor');
-    const jsEditor = document.getElementById('jsEditor');
-    const htmlOutput = document.getElementById('htmlOutput');
-    const cssOutput = document.getElementById('cssOutput');
-    const jsOutput = document.getElementById('jsOutput');
-    const runCodeBtn = document.getElementById('runCode');
-    const refreshPreviewBtn = document.getElementById('refreshPreview');
-    const imageUploadBtn = document.getElementById('imageUploadBtn');
-    const imageUploadModal = document.getElementById('imageUploadModal');
-    const closeImageModalBtn = document.getElementById('closeImageModal');
-    const cancelImageUploadBtn = document.getElementById('cancelImageUpload');
-    const imageUploadInput = document.getElementById('imageUploadInput');
-    const uploadedImagePreview = document.getElementById('uploadedImagePreview');
-    const confirmImageUploadBtn = document.getElementById('confirmImageUpload');
-    const processedImagesContainer = document.getElementById('processedImagesContainer');
-    const imageCountInput = document.getElementById('imageCountInput');
-    const applyImageCountBtn = document.getElementById('applyImageCount');
-
-    // Load saved code from localStorage
-    if (localStorage.getItem('htmlCode')) {
-        htmlEditor.value = localStorage.getItem('htmlCode');
-    }
-    if (localStorage.getItem('cssCode')) {
-        cssEditor.value = localStorage.getItem('cssCode');
-    }
-    if (localStorage.getItem('jsCode')) {
-        jsEditor.value = localStorage.getItem('jsCode');
-    }
-
-    // Save code to localStorage on input
-    htmlEditor.addEventListener('input', () => {
-        localStorage.setItem('htmlCode', htmlEditor.value);
-    });
-    cssEditor.addEventListener('input', () => {
-        localStorage.setItem('cssCode', cssEditor.value);
-    });
-    jsEditor.addEventListener('input', () => {
-        localStorage.setItem('jsCode', jsEditor.value);
-    });
-
-    // Initialize tabs
-    setupTabs();
-
-    // Run code button click handler
-    runCodeBtn.addEventListener('click', runCode);
-    refreshPreviewBtn.addEventListener('click', runCode);
-
-    // Image upload modal handling
-    imageUploadBtn.addEventListener('click', function() {
-        imageUploadModal.style.display = 'flex';
-    });
-
-    closeImageModalBtn.addEventListener('click', function() {
-        imageUploadModal.style.display = 'none';
-    });
-
-    cancelImageUploadBtn.addEventListener('click', function() {
-        imageUploadModal.style.display = 'none';
-    });
-
-    // Image upload handling
-    imageUploadInput.addEventListener('change', handleImageUpload);
-    confirmImageUploadBtn.addEventListener('click', applyImageAnimation);
-    applyImageCountBtn.addEventListener('click', updateProcessedImagesGrid);
-
-    // Function to set up tab switching
-    function setupTabs() {
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('[data-tab-content]');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.getAttribute('data-tab');
-
-                // Update active tab
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                // Show corresponding content
-                tabContents.forEach(content => {
-                    if (content.getAttribute('data-tab-content') === tabName) {
-                        content.style.display = 'block';
-                    } else {
-                        content.style.display = 'none';
-                    }
-                });
-            });
-        });
-    }
-
-    function runCode() {
-        // First, terminate any existing worker
-        if (imageWorker) {
-            imageWorker.terminate();
-            imageWorker = null;
-            workerActive = false;
-        }
-
-        // Clear any existing animation frame
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-
-        // Get the code from each editor
-        const htmlCode = htmlEditor.value;
-        const cssCode = cssEditor.value;
-        const jsCode = jsEditor.value;
-
-        // Clear the output area
-        htmlOutput.innerHTML = '';
-        jsOutput.innerHTML = '';
-        cssOutput.innerHTML = cssCode; // Display CSS in the CSS output
-
-        try {
-            // Create a container for our HTML content
-            const htmlContainer = document.createElement('div');
-            htmlContainer.innerHTML = htmlCode;
-            
-            // Apply CSS to the HTML output
-            const styleElement = document.createElement('style');
-            styleElement.textContent = cssCode;
-            htmlOutput.appendChild(styleElement);
-            htmlOutput.appendChild(htmlContainer);
-
-            // Check if there's a saved image and create a canvas for it
-// Inside the runCode function, where it loads the saved image:
-if (localStorage.getItem('uploadedImage')) {
-    const img = new Image();
-    img.onload = function() {
-        canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.style.maxWidth = '100%';
-        canvas.style.border = '1px solid #444';
-        canvas.style.borderRadius = '8px';
-        
-        // Find a suitable container in the HTML for the canvas
-        // If there's a div with id="canvas-container", use that, otherwise append to htmlOutput
-        const canvasContainer = htmlContainer.querySelector('#canvas-container') || htmlOutput;
-        canvasContainer.appendChild(canvas);
-        
-        ctx = canvas.getContext('2d');
-        
-        // Create a temporary canvas to get the image data
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = img.width;
-        tempCanvas.height = img.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(img, 0, 0);
-        
-        originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
-        
-        // Create the proper selectedRegions array format
-        // This should be an array containing a single array of pixel indices
-        const pixelIndices = [];
-        // Add all non-transparent pixels to the region
-        const imgData = originalImageData.data;
-        const width = originalImageData.width;
-        const height = originalImageData.height;
-        
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const idx = (y * width + x);
-                const alphaIdx = idx * 4 + 3; // Alpha channel index
-                
-                // Include pixel if it's not completely transparent
-                if (imgData[alphaIdx] > 0) {
-                    pixelIndices.push(idx);
-                }
-            }
-        }
-        
-        // Set selectedRegions as an array containing our array of indices
-        selectedRegions = [pixelIndices];
-        console.log('Created selectedRegions:', selectedRegions);
-        
-        // Draw the original image first
-        ctx.putImageData(originalImageData, 0, 0);
-        
-        // Create worker and start animation
-        createWorker();
-    };
-    img.src = localStorage.getItem('uploadedImage');
-}
-            
-            else {
-           
-           
-                // No image uploaded yet, create a placeholder canvas
-                canvas = document.createElement('canvas');
-                canvas.width = 360;
-                canvas.height = 180;
-                canvas.style.backgroundColor = '#252526';
-                canvas.style.maxWidth = '100%';
-                canvas.style.border = '1px solid #444';
-                canvas.style.borderRadius = '8px';
-                
-                // Find a suitable container in the HTML for the canvas
-                const canvasContainer = htmlContainer.querySelector('#canvas-container') || htmlOutput;
-                canvasContainer.appendChild(canvas);
-                
-                ctx = canvas.getContext('2d');
-                
-                // Draw black background and white text
-                ctx.fillStyle = '#252526';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Upload an image to apply animation', canvas.width / 2, canvas.height / 2);
-                
-                jsOutput.innerHTML = 'Please upload an image to start animation';
-            }
-        } catch (error) {
-            jsOutput.innerHTML = `Error: ${error.message}`;
-            console.error('Error:', error);
-        }
-    }
-
-
-
-
-    // Handle image upload
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        // Display the image preview
-        uploadedImagePreview.src = e.target.result;
-        uploadedImagePreview.style.display = 'block';
-        localStorage.setItem('uploadedImage', e.target.result);
-
-        // Store the image data for use with the worker
-        const img = new Image();
-        img.onload = function() {
-            // Create a canvas element
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = img.width;
-            tempCanvas.height = img.height;
-            const tempCtx = tempCanvas.getContext('2d');
-
-            // Draw the image on the canvas
-            tempCtx.drawImage(img, 0, 0);
-
-            // Get the image data
-            originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
-
-            // Create the proper selectedRegions array format
-            // This should be an array containing a single array of pixel indices
-            const pixelIndices = [];
-            // Add all non-transparent pixels to the region
-            const imgData = originalImageData.data;
-            const width = originalImageData.width;
-            const height = originalImageData.height;
-            
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const idx = (y * width + x);
-                    const alphaIdx = idx * 4 + 3; // Alpha channel index
-                    
-                    // Include pixel if it's not completely transparent
-                    if (imgData[alphaIdx] > 0) {
-                        pixelIndices.push(idx);
-                    }
-                }
-            }
-            
-            // Set selectedRegions as an array containing our array of indices
-            selectedRegions = [pixelIndices];
-            console.log('Created selectedRegions:', selectedRegions);
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-    
-    // Apply the animation to the uploaded image
-    function applyImageAnimation() {
-        if (!originalImageData) {
-            jsOutput.innerHTML = 'Error: No image uploaded';
-            return;
-        }
-
-        // Close the modal
-        document.getElementById('imageUploadModal').style.display = 'none';
-
-        // Run the code to apply HTML and CSS
-        runCode();
-    }
-
-
-    function createWorker() {
-    // Terminate existing worker if it exists
-    if (imageWorker) {
-        imageWorker.terminate();
-    }
-
-    try {
-        // Get the worker code from the editor
-        const workerCode = jsEditor.value;
-
-        // Create a blob URL from the worker code
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
-
-        // Create the worker
-        imageWorker = new Worker(workerUrl);
-
-        // Set up the message handler
-        imageWorker.onmessage = function(e) {
-            const { segmentedImages, error, progress } = e.data;
-
-            if (error) {
-                jsOutput.innerHTML = `Worker Error: ${error}`;
-                console.error('Worker error:', error);
-                return;
-            }
-
-            if (segmentedImages && segmentedImages.length > 0) {
-                // Draw the segmented image to the canvas
-                ctx.putImageData(segmentedImages[0], 0, 0);
-
-                // Update progress if available
-                if (progress !== undefined) {
-                    const progressPercent = Math.round(progress * 100);
-                    jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
-                }
-            }
-        };
-
-        workerActive = true;
-        jsOutput.innerHTML = 'Worker created successfully. Starting animation...';
-
-        // Start the animation
-        startAnimation();
-    } catch (error) {
-        jsOutput.innerHTML = `Error creating worker: ${error.message}`;
-        console.error('Worker creation error:', error);
-    }
-}
-
-
-
-
-function startAnimation() {
-    if (!imageWorker || !originalImageData || !workerActive) return;
-
-    // Define the animation frame function
-    const animate = () => {
-        if (!workerActive) return;
-
-        // Get the image count from the input
-        const imageCount = parseInt(imageCountInput.value, 10) || 5;
-
-        // Calculate how many iterations to use based on image count
-        // This scales the animation duration with the number of images
-        const iterations = imageCount * 24; // 24 frames per image
-
-        // Ensure selectedRegions is properly formatted
-        // Convert the selectedRegions into the format expected by the worker
-        let formattedSelectedRegions;
-        
-        if (!selectedRegions || !selectedRegions.length) {
-            // Create a default region that includes all pixels
-            const totalPixels = originalImageData.width * originalImageData.height;
-            const allPixelsRegion = [];
-            for (let i = 0; i < totalPixels; i++) {
-                allPixelsRegion.push(i);
-            }
-            formattedSelectedRegions = [allPixelsRegion];
-        } else {
-            // Convert the existing selectedRegions to proper format if needed
-            formattedSelectedRegions = selectedRegions;
-            
-            // If selectedRegions is already an array of pixel indices, wrap it in another array
-            if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
-                formattedSelectedRegions = [selectedRegions];
-            }
-            
-            // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
-            if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' && 
-                (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
-                const convertedRegions = [];
-                const region = [];
-                
-                for (let i = 0; i < selectedRegions[0].length; i++) {
-                    if (selectedRegions[0][i] === 1) {
-                        region.push(i);
-                    }
-                }
-                
-                convertedRegions.push(region);
-                formattedSelectedRegions = convertedRegions;
-            }
-        }
-
-        // Send data to the worker
-        imageWorker.postMessage({
-    imageData: originalImageData,
-    selectedRegions: selectedRegions, // Now correctly formatted
-    value: 1,
-    value5: iterations,
-    reset: false
-});
-
-        // Request the next frame
-        animationFrameId = requestAnimationFrame(animate);
-    };
-
-    // Start the animation
-    animate();
-}
-
-
-    // Update the processed images grid
-    function updateProcessedImagesGrid() {
-        if (!originalImageData) return;
-
-        // Clear the container
-        processedImagesContainer.innerHTML = '';
-
-        // Get the number of images to generate
-        const imageCount = parseInt(imageCountInput.value, 10) || 5;
-
-        // Create header
-        const header = document.createElement('h3');
-        header.textContent = 'Processed Images';
-        processedImagesContainer.appendChild(header);
-
-        // Create grid container
-        const grid = document.createElement('div');
-        grid.className = 'processed-images-grid';
-        processedImagesContainer.appendChild(grid);
-
-        // Create canvas elements for each processed image
-        for (let i = 0; i < imageCount; i++) {
-            // Create container for the image
-            const container = document.createElement('div');
-            container.className = 'processed-image-container';
-
-            // Create canvas
-            const canvas = document.createElement('canvas');
-            canvas.width = originalImageData.width;
-            canvas.height = originalImageData.height;
-
-            // Create label
-            const label = document.createElement('div');
-            label.className = 'image-label';
-            label.textContent = `Frame ${i + 1}`;
-
-            // Append to container
-            container.appendChild(canvas);
-            container.appendChild(label);
-
-            // Append to grid
-            grid.appendChild(container);
-
-            // Get canvas context
-            const ctx = canvas.getContext('2d');
-
-            // Create a temporary worker for each frame
-            processImageWithWorker(ctx, i, imageCount);
-        }
-    }
-
-    function processImageWithWorker(ctx, frameIndex, totalFrames) {
-    if (!originalImageData) return;
-
-    // Create a temporary worker
-    try {
-        const workerCode = jsEditor.value;
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
-
-        const tempWorker = new Worker(workerUrl);
-
-        // Set up the message handler
-        tempWorker.onmessage = function(e) {
-            const { segmentedImages, error } = e.data;
-
-            if (error) {
-                console.error('Worker error:', error);
-                return;
-            }
-
-            if (segmentedImages && segmentedImages.length > 0) {
-                // Draw the segmented image to the canvas
-                ctx.putImageData(segmentedImages[0], 0, 0);
-
-                // Terminate the worker
-                tempWorker.terminate();
-            }
-        };
-
-        // Calculate the progress value for this frame
-        const progress = frameIndex / (totalFrames - 1);
-
-        // Calculate total iterations based on image count
-        const iterations = totalFrames * 24; // 24 frames per image
-
-        // Ensure selectedRegions is properly formatted
-        let formattedSelectedRegions;
-        
-        if (!selectedRegions || !selectedRegions.length) {
-            // Create a default region that includes all pixels
-            const totalPixels = originalImageData.width * originalImageData.height;
-            const allPixelsRegion = [];
-            for (let i = 0; i < totalPixels; i++) {
-                allPixelsRegion.push(i);
-            }
-            formattedSelectedRegions = [allPixelsRegion];
-        } else {
-            // Convert the existing selectedRegions to proper format if needed
-            formattedSelectedRegions = selectedRegions;
-            
-            // If selectedRegions is already an array of pixel indices, wrap it in another array
-            if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
-                formattedSelectedRegions = [selectedRegions];
-            }
-            
-            // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
-            if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' && 
-                (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
-                const convertedRegions = [];
-                const region = [];
-                
-                for (let i = 0; i < selectedRegions[0].length; i++) {
-                    if (selectedRegions[0][i] === 1) {
-                        region.push(i);
-                    }
-                }
-                
-                convertedRegions.push(region);
-                formattedSelectedRegions = convertedRegions;
-            }
-        }
-
-        // Send data to the worker
-        tempWorker.postMessage({
-    imageData: originalImageData,
-    selectedRegions: selectedRegions, // Now correctly formatted
-    value: 1,
-    value5: iterations,
-    currentIteration: Math.floor(progress * iterations),
-    reset: true
-});
-    } catch (error) {
-        console.error('Worker creation error:', error);
-    }
-}
-
-
-
-
-    // Initialize by running the code once
-    runCode();
-});
-// API Key Modal event listeners
-const apiKeyModal = document.getElementById('apiKeyModal');
-const closeModalBtn = document.getElementById('closeModal');
-
-
-
-closeModalBtn.addEventListener('click', function() {
-    apiKeyModal.style.display = 'none';
-});
-
-
-// Credits Modal event listeners
-const buyCreditsBtn = document.getElementById('buyCreditsBtn');
-const creditsModal = document.getElementById('creditsModal');
-const closeCreditsModalBtn = document.getElementById('closeCreditsModal');
-const cancelCreditsBtn = document.getElementById('cancelCredits');
-const purchaseCreditsBtn = document.getElementById('purchaseCredits');
-const paymentPlans = document.querySelectorAll('.payment-plan');
-
-buyCreditsBtn.addEventListener('click', function() {
-    creditsModal.style.display = 'flex';
-});
-
-closeCreditsModalBtn.addEventListener('click', function() {
-    creditsModal.style.display = 'none';
-});
-
-cancelCreditsBtn.addEventListener('click', function() {
-    creditsModal.style.display = 'none';
-});
-
-
-purchaseCreditsBtn.addEventListener('click', function() {
-    const selectedPlan = document.querySelector('.payment-plan.selected');
-    if (selectedPlan) {
-        const planType = selectedPlan.getAttribute('data-plan');
-        // Save selected plan to localStorage before redirect
-        localStorage.setItem('selectedPlan', planType);
-        // Redirect to Dodo Payments checkout
-        window.location.href = 'https://checkout.dodopayments.com/buy/pdt_QIW8J9Jozxx65k9awTQOe?quantity=1';
-    } else {
-        alert('Please select a plan');
-    }
-});
-
-
-
-// Add event listeners to payment plans for selection
-paymentPlans.forEach(plan => {
-    plan.addEventListener('click', function() {
-        paymentPlans.forEach(p => p.classList.remove('selected'));
-        this.classList.add('selected');
-    });
-});
-
-// AI provider selection event listeners
-
-const htmlDeepseekBtn = document.getElementById('htmlDeepseekBtn');
-
-const cssDeepseekBtn = document.getElementById('cssDeepseekBtn');
-const jsDeepseekBtn = document.getElementById('jsDeepseekBtn');
-
-
-
-htmlDeepseekBtn.addEventListener('click', function() {
-    callAiApi('html', 'deepseek');
-});
-
-
-
-cssDeepseekBtn.addEventListener('click', function() {
-    callAiApi('css', 'deepseek');
-});
-
-
-jsDeepseekBtn.addEventListener('click', function() {
-    callAiApi('js', 'deepseek');
-});
-
-// Function to update API status indicator
-function updateApiStatus() {
-    const apiStatus = document.getElementById('apiStatus');
-    const apiStatusText = document.getElementById('apiStatusText');
-    
-    const deepseekApiKey = localStorage.getItem('deepseekApiKey');
-    const useCreatorApiKey = localStorage.getItem('useCreatorApiKey') === 'true';
- 
-}
-
-// Function to call AI API
-function callAiApi(language, provider) {
-    // Check if API key is set
-    const apiKey =  localStorage.getItem('deepseekApiKey');
-    
-    const useCreatorApiKey = localStorage.getItem('useCreatorApiKey') === 'true';
-
-    
-    // Check credits
-    const credits = parseInt(localStorage.getItem('credits') || '10');
-    if (credits <= 0 && useCreatorApiKey) {
-        alert('You have no credits left. Please purchase more credits.');
-        creditsModal.style.display = 'flex';
-        return;
-    }
-    
-    // Get the current code from the editors
-    const htmlCode = document.getElementById('htmlEditor').value;
-    const cssCode = document.getElementById('cssEditor').value;
-    const jsCode = document.getElementById('jsEditor').value;
-    
-    // Get editor for the selected language
-    const editor = document.getElementById(`${language}Editor`);
-    const outputArea = document.getElementById('jsOutput');
-    
-    // Show loading state
-    outputArea.innerHTML = `Calling ${provider} API for ${language.toUpperCase()} code...`;
-
-    setTimeout(() => {
-        // Update the editor with the "AI-generated" code
-        if (language === 'html') {
-            editor.value = `<div>
-  <h1>AI Generated HTML</h1>
-  <p>This is a sample response from ${provider}</p>
-  <div id="canvas-container"></div>
-</div>`;
-        } else if (language === 'css') {
-            editor.value = `
-}
-p {
-  margin: 20px;
-  font-size: 16px;
-}`;
-        } else if (language === 'js') {
-            editor.value = `// Image processing worker
-self.onmessage = function(e) {
-  const { imageData, selectedRegions, value, value5, currentIteration, reset } = e.data;
-  
-  // Create a copy of the image data
-  const newData = new ImageData(
-    new Uint8ClampedArray(imageData.data),
-    imageData.width,
-    imageData.height
-  );
-  
-  // Use the iteration value (if provided) or calculate a time-based value
-  const iteration = currentIteration !== undefined 
-    ? currentIteration 
-    : Math.floor(Date.now() / 40) % value5;
-  
-  // Process the selected regions
-  if (selectedRegions && selectedRegions.length > 0) {
-    // Calculate the animation progress (0 to 1)
-    const progress = iteration / value5;
-    
-    // Apply the effect to each selected region
-    selectedRegions.forEach(region => {
-      region.forEach(pixelIndex => {
-        // Calculate the RGBA indices
-        const i = pixelIndex * 4;
-        
-        // Create a wave effect based on progress
-        const offset = Math.sin(progress * Math.PI * 2 + pixelIndex * 0.001) * 20;
-        
-        // Apply color changes
-        newData.data[i] = Math.max(0, Math.min(255, imageData.data[i] + offset)); // R
-        newData.data[i+1] = Math.max(0, Math.min(255, imageData.data[i+1])); // G
-        newData.data[i+2] = Math.max(0, Math.min(255, imageData.data[i+2] - offset)); // B
-      });
-    });
-  }
-  
-  // Send the processed image back to the main thread
-  self.postMessage({ 
-    segmentedImages: [newData],
-    progress: iteration / value5
-  });
-};`;
-        }
-        
-        // Trigger localStorage save
-        editor.dispatchEvent(new Event('input'));
-        
-        // Deduct credits if using creator's API
-        if (useCreatorApiKey) {
-            const newCredits = credits - 1;
-            localStorage.setItem('credits', newCredits);
-            document.getElementById('creditCount').textContent = `${newCredits} credits`;
-        }
-        
-        // Show success message
-        outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider}`;
-        
-        // Run the code to see changes
-        document.getElementById('runCode').click();
-    }, 1500);
-}
-
-// Initialize API status on page load
-updateApiStatus();
-
-// Initialize credit count
-const savedCredits = localStorage.getItem('credits');
-if (savedCredits) {
-    document.getElementById('creditCount').textContent = `${savedCredits} credits`;
-}
-
-
-    </script>
-<!-- Code injected by live-server -->
+<script src="main.js"></script>
+<script src="api-payment.js"></script>
+<script src="ai-api.js"></script>
 <script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
+// Add JavaScript for the hamburger menu functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+    
+    // Toggle dropdown when hamburger button is clicked
+    hamburgerBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        hamburgerDropdown.classList.toggle('show');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!hamburgerBtn.contains(e.target) && !hamburgerDropdown.contains(e.target)) {
+            hamburgerDropdown.classList.remove('show');
+        }
+    });
+    
+    // Fix for event bubbling with buttons inside the dropdown
+    document.getElementById('applyImageCount').addEventListener('click', function(e) {
+        e.stopPropagation();
+        // Your existing apply logic here
+    });
+    
+    document.getElementById('buyCreditsBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        // Your existing buy credits logic here
+        
+        // Optionally close the dropdown when buying credits
+        hamburgerDropdown.classList.remove('show');
+    });
+});
 </script>
 </body>
 </html>
