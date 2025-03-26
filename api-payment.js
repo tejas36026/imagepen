@@ -6,35 +6,38 @@ if (urlParams.get('payment_status') === 'success') {
     // Get the plan from localStorage (saved before redirect)
     const planType = localStorage.getItem('selectedPlan');
     
-    // Add credits based on plan and check the payment link used
-    let creditAmount = 10;
+    // Add credits/tokens based on plan and check the payment link used
+    let creditAmount = 10; // Default fallback
     const paymentSource = urlParams.get('payment_source') || '';
     
     if (paymentSource.includes('pdX51NlsWQG0xc14FX9AM')) {
-        // This was the lower-priced payment link
-        switch(planType) {
-            case 'basic': creditAmount = 50; break;
-            default: creditAmount = 50; break;
-        }
+        // This was the $29 plan (200 API calls)
+        creditAmount = 200;
     } else {
-        // This was the higher-priced payment link
-        switch(planType) {
-            case 'pro': creditAmount = 200; break;
-            case 'unlimited': creditAmount = 999; break;
-            default: creditAmount = 200; break;
-        }
+        // This was the $299 plan (100 million tokens)
+        creditAmount = 100000000; // 100 million tokens
     }
     
     // Get current credits and add new ones
     const currentCredits = parseInt(localStorage.getItem('credits') || '0');
     const newCredits = currentCredits + creditAmount;
     
-    // Update credits
+    // Update credits/tokens
     localStorage.setItem('credits', newCredits);
-    document.getElementById('creditCount').textContent = `${newCredits} credits`;
+    
+    // Update UI display based on plan
+    if (planType === 'pro') {
+        document.getElementById('creditCount').textContent = `${newCredits.toLocaleString()} tokens`;
+    } else {
+        document.getElementById('creditCount').textContent = `${newCredits} credits`;
+    }
     
     // Show success message
-    alert('Payment successful! Credits added to your account.');
+    if (planType === 'pro') {
+        alert('Payment successful! 100 million tokens added to your account.');
+    } else {
+        alert('Payment successful! 200 credits added to your account.');
+    }
     
     // Clear the payment status from URL to prevent duplicate credits
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -53,6 +56,58 @@ const closeModalBtn = document.getElementById('closeModal');
 closeModalBtn.addEventListener('click', function() {
     apiKeyModal.style.display = 'none';
 });
+function deductTokensOnGenerate() {
+    // Get the magicBtn (generate button)
+    const magicBtn = document.getElementById('magicBtn');
+    const jsDeepseekBtn = document.getElementById('jsDeepseekBtn');
+    
+    // Add event listener for the generate button
+    [magicBtn, jsDeepseekBtn].forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', function() {
+                // Get current token/credit count
+                const currentCredits = parseInt(localStorage.getItem('credits') || '0');
+                
+                // Check if user has tokens/credits
+                if (currentCredits <= 0) {
+                    alert('You have no credits remaining. Please purchase a plan to continue using the API.');
+                    creditsModal.style.display = 'flex'; // Show payment modal
+                    return;
+                }
+                
+                // Determine amount to deduct based on plan
+                const userPlan = localStorage.getItem('selectedPlan') || 'basic';
+                let deductAmount = 1; // Default for basic plan (1 credit per call)
+                
+                if (userPlan === 'pro') {
+                    // For pro plan, deduct 1000 tokens
+                    deductAmount = 1000;
+                }
+                
+                // Update credits
+                const newCredits = currentCredits - deductAmount;
+                localStorage.setItem('credits', newCredits);
+                deductTokensOnGenerate();
+
+                // Update UI
+                const creditCountElement = document.getElementById('creditCount');
+                if (creditCountElement) {
+                    if (userPlan === 'pro') {
+                        // For pro plan, show tokens remaining
+                        creditCountElement.textContent = `${newCredits.toLocaleString()} tokens`;
+                    } else {
+                        // For basic plan, show credits
+                        creditCountElement.textContent = `${newCredits} credits`;
+                    }
+                }
+                
+                // Proceed with API call...
+                // Your existing code to call the API goes here
+            });
+        }
+    });
+}
+
 
 // Credits Modal event listeners
 const buyCreditsBtn = document.getElementById('buyCreditsBtn');
@@ -84,10 +139,10 @@ purchaseCreditsBtn.addEventListener('click', function() {
         // Choose payment link based on plan
         let paymentUrl;
         if (planType === 'basic') {
-            // Lower-priced plan link
+            // $29 monthly plan
             paymentUrl = 'https://checkout.dodopayments.com/buy/pdt_pdX51NlsWQG0xc14FX9AM?quantity=1';
         } else {
-            // Higher-priced plan link (pro and unlimited)
+            // $299 monthly plan
             paymentUrl = 'https://checkout.dodopayments.com/buy/pdt_QIW8J9Jozxx65k9awTQOe?quantity=1';
         }
         

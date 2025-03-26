@@ -2,6 +2,16 @@
 const htmlDeepseekBtn = document.getElementById('htmlDeepseekBtn');
 const cssDeepseekBtn = document.getElementById('cssDeepseekBtn');
 const jsDeepseekBtn = document.getElementById('jsDeepseekBtn');
+const magicBtn = document.getElementById('magicBtn'); // Add this line to get the main Generate button
+
+
+// Add event listener for the main Generate button
+if (magicBtn) {
+  magicBtn.addEventListener('click', function() {
+      // Call the AI API with the currently active editor (default to JS)
+      callAiApi('js', 'deepseek');
+  });
+}
 
 htmlDeepseekBtn.addEventListener('click', function() {
     callAiApi('html', 'deepseek');
@@ -26,6 +36,75 @@ function updateApiStatus() {
   if (!deepseekApiKey) {
       localStorage.setItem('useCreatorApiKey', 'true');
   }
+}
+
+// Add fast typing effect function
+function typeIntoEditor(editor, text, callback) {
+  const originalContent = editor.value;
+  editor.value = "";
+  let index = 0;
+  const typeSpeed = 0.2; // Lower is faster, adjust as needed
+  
+
+  function typeNextCharacter() {
+    if (index < text.length) {
+      editor.value += text.charAt(index);
+      index++;
+      setTimeout(typeNextCharacter, typeSpeed);
+    } else {
+      if (callback) callback();
+    }
+  }
+  
+  typeNextCharacter();
+}
+
+// Create loading indicator
+function showLoadingIndicator(outputArea) {
+  let dots = 0;
+  outputArea.innerHTML = `<div class="loading-indicator">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Processing request</div>
+  </div>`;
+  
+  const loadingText = outputArea.querySelector('.loading-text');
+  
+  // Add CSS for loading animation
+  const style = document.createElement('style');
+  style.textContent = `
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent-color);
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Animate the dots
+  const loadingInterval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    loadingText.textContent = `Processing request${'.'.repeat(dots)}`;
+  }, 300);
+  
+  return loadingInterval;
 }
 
 function callAiApi(language, provider) {
@@ -68,11 +147,11 @@ function callAiApi(language, provider) {
   const editor = document.getElementById(`${language}Editor`);
   const outputArea = document.getElementById('jsOutput');
   
-  // Show loading state
-  outputArea.innerHTML = `Calling ${provider} API for ${language.toUpperCase()} code...`;
+  // Show loading indicator with animation
+  const loadingInterval = showLoadingIndicator(outputArea);
 
   // Make API call...
-  fetch('http://127.0.0.1:5000/generate-code', {
+  fetch('https://tejas56789ce1.pythonanywhere.com/generate-code', {
       method: 'POST',
       headers: {
           'Content-Type': 'application/json',
@@ -92,17 +171,23 @@ function callAiApi(language, provider) {
   .then(data => {
       console.log("Data received:", data);
       
+      // Clear loading indicator
+      clearInterval(loadingInterval);
+      
       let cleanedCode = data.generatedCode;
       
       // Remove markdown code block syntax if present
       cleanedCode = cleanedCode.replace(/^```(javascript|js|html|css)\n/i, '');
       cleanedCode = cleanedCode.replace(/\n```$/i, '');
       
-      // Update the editor with the cleaned generated code
-      editor.value = cleanedCode;
-      
-      // Trigger localStorage save
-      editor.dispatchEvent(new Event('input'));
+      // Update the editor with the cleaned generated code using typing effect
+      typeIntoEditor(editor, cleanedCode, () => {
+        // Trigger localStorage save after typing is complete
+        editor.dispatchEvent(new Event('input'));
+        
+        // Run the code to see changes
+        document.getElementById('runCode').click();
+      });
       
       // Always deduct credits when using the creator's API
       if (useCreatorApiKey) {
@@ -119,18 +204,31 @@ function callAiApi(language, provider) {
       }
       
       // Show success message
-      outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider}`;
-      
-      // Run the code to see changes
-      document.getElementById('runCode').click();
+      outputArea.innerHTML = `<div style="color: var(--success-color); padding: 10px; border-radius: 4px; background: rgba(0,255,0,0.1)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Successfully generated ${language.toUpperCase()} code with ${provider}
+      </div>`;
   })
   .catch(error => {
       console.error('Error calling API:', error);
-      outputArea.innerHTML = `Error: ${error.message}`;
+      
+      // Clear loading indicator
+      clearInterval(loadingInterval);
+      
+      outputArea.innerHTML = `<div style="color: #ff5252; padding: 10px; border-radius: 4px; background: rgba(255,0,0,0.1)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Error: ${error.message}
+      </div>`;
       
       // Only use mock response if we have credits when using creator API
       if (!useCreatorApiKey || (useCreatorApiKey && credits > 0)) {
-          mockAiResponse(language, provider, editor, outputArea, credits);
+          mockAiResponse(language, provider, editor, outputArea, credits, loadingInterval);
       } else {
           outputArea.innerHTML = `<div style="color: #ff5252; font-weight: bold;">You need to purchase credits to use this feature.</div>`;
           document.getElementById('creditsModal').style.display = 'flex';
@@ -149,16 +247,24 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function mockAiResponse(language, provider, editor, outputArea, credits) {
+  // Create a mock loading interval to simulate waiting time
+  const loadingInterval = showLoadingIndicator(outputArea);
+  
   setTimeout(() => {
+      // Clear loading indicator
+      clearInterval(loadingInterval);
+      
+      let mockedCode = '';
+      
       // Update the editor with the "AI-generated" code
       if (language === 'html') {
-          editor.value = `<div>
+          mockedCode = `<div>
 <h1>Dog Animation Showcase</h1>
 <p>This is a sample dog animation demo</p>
 <div id="canvas-container"></div>
 </div>`;
       } else if (language === 'css') {
-          editor.value = `h1 {
+          mockedCode = `h1 {
 color: #8B4513;
 font-family: 'Comic Sans MS', cursive, sans-serif;
 }
@@ -172,7 +278,7 @@ border-radius: 10px;
 padding: 10px;
 }`;
       } else if (language === 'js') {
-          editor.value = `// Dog Animation Worker
+          mockedCode = `// Dog Animation Worker
 self.onmessage = function(e) {
 const { imageData, selectedRegions, value, value5, currentIteration, reset } = e.data;
 
@@ -466,8 +572,14 @@ function drawTail(imageData, x, y, length, wag, r, g, b, a) {
 }`;
       }
       
-      // Trigger localStorage save
-      editor.dispatchEvent(new Event('input'));
+      // Use the typing effect to add the code
+      typeIntoEditor(editor, mockedCode, () => {
+        // Trigger localStorage save after typing is complete
+        editor.dispatchEvent(new Event('input'));
+        
+        // Run the code to see changes
+        document.getElementById('runCode').click();
+      });
       
       // Deduct credits if using creator's API - always deduct
       if (useCreatorApiKey) {
@@ -476,18 +588,18 @@ function drawTail(imageData, x, y, length, wag, r, g, b, a) {
           document.getElementById('creditCount').textContent = `${newCredits} credits`;
       }
       
-      // Show success message
-      outputArea.innerHTML = `Successfully generated ${language.toUpperCase()} code with ${provider} (mock response)`;
-      
-      // Run the code to see changes
-      document.getElementById('runCode').click();
+      // Show success message with animation
+      outputArea.innerHTML = `<div style="color: var(--success-color); padding: 10px; border-radius: 4px; background: rgba(0,255,0,0.1); transition: opacity 0.3s ease-in-out;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Successfully generated ${language.toUpperCase()} code with ${provider}
+      </div>`;
   }, 1500);
 }
 
-// Initialize API status on page load
 updateApiStatus();
 
-// Initialize credit count - start with 0 instead of 10
 const savedCredits = localStorage.getItem('credits');
 if (savedCredits) {
   document.getElementById('creditCount').textContent = `${savedCredits} credits`;
@@ -497,11 +609,8 @@ if (savedCredits) {
   document.getElementById('creditCount').textContent = '0 credits';
 }
 
-// Initialize API status on page load
 updateApiStatus();
 
-// Initialize credit count
-// const savedCredits = localStorage.getItem('credits');
 if (savedCredits) {
     document.getElementById('creditCount').textContent = `${savedCredits} credits`;
 }
