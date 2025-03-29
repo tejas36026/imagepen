@@ -56,6 +56,8 @@ const closeModalBtn = document.getElementById('closeModal');
 closeModalBtn.addEventListener('click', function() {
     apiKeyModal.style.display = 'none';
 });
+
+
 function deductTokensOnGenerate() {
     // Get the magicBtn (generate button)
     const magicBtn = document.getElementById('magicBtn');

@@ -1,5 +1,3 @@
-// Enhanced tooltip and text analysis functionality
-
 document.addEventListener('DOMContentLoaded', function() {
     // Create an enhanced tooltip with prompt input
     const enhancedTooltip = createEnhancedTooltip();
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tooltip.innerHTML = `
             <div class="tooltip-content">
                 <div class="tooltip-actions">
-
                     <button class="tooltip-btn analyze-btn" title="Analyze with DeepSeek">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
@@ -51,49 +48,117 @@ document.addEventListener('DOMContentLoaded', function() {
         return tooltip;
     }
 
+
     function handleSelection(e) {
         const selection = window.getSelection();
         const selectedText = selection.toString().trim();
         
         if (selectedText) {
             const tooltip = document.querySelector('.enhanced-selection-tooltip');
+            const promptInput = tooltip.querySelector('.tooltip-prompt-input');
+            
+            // PROPERLY UPDATE TEXTAREA
+            promptInput.value = selectedText;
+            
+            // Force DOM update for textarea
+            promptInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Add temporary attribute to force redraw
+            promptInput.style.display = 'none';
+            promptInput.offsetHeight; // Trigger reflow
+            promptInput.style.display = 'block';
+    
+            
+            // Store the selected text in the tooltip's dataset
+            tooltip.dataset.text = selectedText;
+            
+            // Calculate viewport dimensions
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Calculate the central 50% area of the viewport
+            const centerWidthStart = viewportWidth * 0.25;
+            const centerWidthEnd = viewportWidth * 0.75;
+            const centerHeightStart = viewportHeight * 0.25;
+            const centerHeightEnd = viewportHeight * 0.75;
+            
+            // Make tooltip visible but offscreen first to compute its dimensions
+            tooltip.style.position = 'fixed';
+            tooltip.style.display = 'block';
+            tooltip.style.top = '-9999px';
+            tooltip.style.left = '-9999px';
+            
+            // Get tooltip dimensions after it's visible
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
             
             // Get the selected range and mouse position
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
-            const mouseX = e.clientX || (rect.left + rect.width / 2);
-            const mouseY = e.clientY || rect.bottom;
-            const rightOffset = -120; // Pixels to offset from mouse position
-            tooltip.style.position = 'fixed';
-            tooltip.style.top = `${mouseY + 10}px`;
-            tooltip.style.left = `${mouseX + rightOffset}px`; // Changed to position right of cursor
+            let mouseX = e.clientX || (rect.left + rect.width / 2);
+            let mouseY = e.clientY || rect.bottom;
             
-            // Ensure tooltip stays within viewport
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const tooltipRect = tooltip.getBoundingClientRect();
+            // Keep tooltip position within the central 50% area
+            let tooltipX = mouseX;
+            let tooltipY = mouseY + 10;
             
-            // If tooltip would go off right side, show to left instead
-            if (tooltipRect.right > viewportWidth) {
-                tooltip.style.left = `${mouseX - tooltipRect.width - rightOffset}px`;
+            // Adjust X position to stay within central area
+            if (tooltipX + tooltipWidth > centerWidthEnd) {
+                tooltipX = centerWidthEnd - tooltipWidth;
+            }
+            if (tooltipX < centerWidthStart) {
+                tooltipX = centerWidthStart;
             }
             
-            // If tooltip would go off left side, show to right instead
-            if (tooltipRect.left < 0) {
-                tooltip.style.left = `${rightOffset}px`;
+            // Adjust Y position to stay within central area
+            if (tooltipY + tooltipHeight > centerHeightEnd) {
+                tooltipY = centerHeightEnd - tooltipHeight;
+            }
+            if (tooltipY < centerHeightStart) {
+                tooltipY = centerHeightStart;
             }
             
-            // Adjust vertical position if tooltip goes below viewport
-            if (tooltipRect.bottom > viewportHeight) {
-                tooltip.style.top = `${mouseY - tooltipRect.height - 10}px`;
-            }
+            // Set the final position
+            tooltip.style.top = `${tooltipY}px`;
+            tooltip.style.left = `${tooltipX}px`;
             
-            tooltip.style.display = 'block';
-            tooltip.setAttribute('data-text', selectedText);
+            // Display selected text in console with syntax highlighting
+            const jsOutput = document.getElementById('jsOutput');
+            if (jsOutput) {
+                // Determine language for syntax highlighting
+                let language = 'text';
+                if (currentEditor) {
+                    if (currentEditor.id === 'htmlEditor') language = 'html';
+                    else if (currentEditor.id === 'cssEditor') language = 'css';
+                    else if (currentEditor.id === 'jsEditor') language = 'javascript';
+                }
+                
+                // Display in console with proper formatting
+                displayCopiedText(jsOutput, selectedText, language);
+                
+                // Switch to console tab to show the result
+                const consoleTab = document.querySelector('.tab[data-tab="console"]');
+                if (consoleTab) {
+                    consoleTab.click();
+                }
+            }
         } else {
             const tooltip = document.querySelector('.enhanced-selection-tooltip');
             tooltip.style.display = 'none';
         }
+    }
+    
+
+    // Function to display selected text in console with syntax highlighting
+    function displayCopiedText(outputArea, text, language) {
+        outputArea.innerHTML = `
+            <div class="copied-text-display">
+                <h3>Selected ${language.toUpperCase()} Code</h3>
+                <div class="copied-code-container">
+                    <pre class="code-block ${language}">${text}</pre>
+                </div>
+            </div>
+        `;
     }
 
     // Analyze button functionality
@@ -101,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const analyzeBtn = e.target.closest('.analyze-btn');
         if (analyzeBtn) {
             const tooltip = analyzeBtn.closest('.enhanced-selection-tooltip');
-            const text = tooltip.getAttribute('data-text');
+            const text = tooltip.dataset.text;
             const promptInput = tooltip.querySelector('.tooltip-prompt-input');
             const userPrompt = promptInput.value.trim();
     
@@ -120,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltip.style.display = 'none';
         }
     });
+    
     // Hide tooltip when clicking elsewhere
     document.addEventListener('mousedown', (e) => {
         const tooltip = document.querySelector('.enhanced-selection-tooltip');
@@ -127,58 +193,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltip.style.display = 'none';
         }
     });
-
-// Analyze button functionality
-document.addEventListener('click', (e) => {
-    const analyzeBtn = e.target.closest('.analyze-btn');
-    if (analyzeBtn) {
-        const tooltip = analyzeBtn.closest('.enhanced-selection-tooltip');
-        const text = tooltip.getAttribute('data-text');
-        const promptInput = tooltip.querySelector('.tooltip-prompt-input');
-        const userPrompt = promptInput.value.trim();
-
-        // Determine the language based on the current editor
-        let language = 'text';
-        if (currentEditor) {
-            if (currentEditor.id === 'htmlEditor') language = 'html';
-            else if (currentEditor.id === 'cssEditor') language = 'css';
-            else if (currentEditor.id === 'jsEditor') language = 'javascript';
-        }
-
-        // Perform analysis (sends both text and prompt to Flask server)
-        analyzeTextWithDeepSeekAPI(text, userPrompt, language);
-        
-        // Hide tooltip
-        tooltip.style.display = 'none';
-    }
 });
 
-    // Analyze button functionality
-    document.addEventListener('click', (e) => {
-        const analyzeBtn = e.target.closest('.analyze-btn');
-        if (analyzeBtn) {
-            const tooltip = analyzeBtn.closest('.enhanced-selection-tooltip');
-            const text = tooltip.getAttribute('data-text');
-            const promptInput = tooltip.querySelector('.tooltip-prompt-input');
-            const userPrompt = promptInput.value.trim();
-
-            // Determine the language based on the current editor
-            let language = 'text';
-            if (currentEditor) {
-                if (currentEditor.id === 'htmlEditor') language = 'html';
-                else if (currentEditor.id === 'cssEditor') language = 'css';
-                else if (currentEditor.id === 'jsEditor') language = 'javascript';
-            }
-
-            // Perform analysis
-            analyzeTextWithDeepSeekAPI(text, userPrompt, language);
-            
-            // Hide tooltip
-            tooltip.style.display = 'none';
-        }
-    });
-
-});
+// [Rest of the code remains exactly the same...]
 
 async function mockAnalyzeText(text, prompt, language) {
     // Simulate API call delay
@@ -186,70 +203,7 @@ async function mockAnalyzeText(text, prompt, language) {
     
     // Generate analysis based on language
     let analysis = '';
-    
-    // Custom prompt handling
-    const customPrompt = prompt ? `\n\nCustom Prompt: ${prompt}\n` : '';
-    
-    if (language === 'html') {
-        analysis = `## HTML Analysis${customPrompt}\n\n`;
         
-        if (text.includes('<div')) {
-            analysis += `- This code uses \`<div>\` elements for layout structuring\n`;
-        }
-        
-        if (text.includes('class=')) {
-            analysis += `- Classes are properly used for styling hooks\n`;
-        } else {
-            analysis += `- Consider adding classes to elements for better styling control\n`;
-        }
-        
-        if (!text.includes('<!DOCTYPE')) {
-            analysis += `- Missing DOCTYPE declaration which may cause rendering inconsistencies\n`;
-        }
-    } else if (language === 'css') {
-        analysis = `## CSS Analysis${customPrompt}\n\n`;
-        
-        if (text.includes('flex') || text.includes('grid')) {
-            analysis += `- Modern layout techniques (Flexbox/Grid) are being used\n`;
-        }
-        
-        if (text.includes('!important')) {
-            analysis += `- Warning: Using !important overrides which may lead to specificity issues\n`;
-        }
-        
-        if (!text.includes('@media')) {
-            analysis += `- Consider adding media queries for responsive design\n`;
-        }
-    } else if (language === 'javascript') {
-        analysis = `## JavaScript Analysis${customPrompt}\n\n`;
-        
-        if (text.includes('function')) {
-            analysis += `- Using function declarations\n`;
-        }
-        
-        if (text.includes('=>')) {
-            analysis += `- Arrow functions present, showing modern JS approach\n`;
-        }
-        
-        if (text.includes('var ')) {
-            analysis += `- Consider replacing 'var' with 'let' or 'const' for better scoping\n`;
-        }
-        
-        if (text.includes('addEventListener')) {
-            analysis += `- Good use of event listeners for handling interactions\n`;
-        }
-    } else {
-        analysis = `## Text Analysis${customPrompt}\n\n`;
-        analysis += `- This text is ${text.length} characters long\n`;
-        analysis += `- It appears to contain code or technical content\n`;
-    }
-    
-    // Add general recommendations
-    analysis += `\n## Recommendations\n\n`;
-    analysis += `- Make sure your code follows consistent indentation\n`;
-    analysis += `- Add comments to explain complex logic\n`;
-    analysis += `- Consider breaking down complex functions into smaller units\n`;
-    
     return { analysis: analysis };
 }
 
@@ -317,7 +271,7 @@ async function analyzeTextWithDeepSeekAPI(text, prompt, language) {
     }
 }
 
-const API_KEY  = '07589fb47c69da2f5af8b4ecdee9b843614c5f76605e1706b1af22ea1dd728cd';
+const API_KEY = '07589fb47c69da2f5af8b4ecdee9b843614c5f76605e1706b1af22ea1dd728cd';
 
 // Function to display analysis results
 function displayAnalysisResult(outputArea, data, originalText, language) {
@@ -333,6 +287,35 @@ function displayAnalysisResult(outputArea, data, originalText, language) {
             </div>
         </div>
     `;
+    const analysisContent = outputArea.querySelector('.analysis-content');
+    if (analysisContent) {
+        applyTypingAnimation(analysisContent);
+    }
+
+    function applyTypingAnimation(element) {
+        const text = element.textContent;
+        element.textContent = '';
+        element.style.visibility = 'visible';
+        
+        let i = 0;
+        const speed = 0.1; // Adjust typing speed (lower is faster)
+        
+        function typeWriter() {
+            if (i < text.length) {
+                // Add next character
+                element.innerHTML += text.charAt(i);
+                
+                // Randomly vary speed slightly for more natural effect
+                const currentSpeed = speed + (Math.random() * 10 - 5);
+                
+                i++;
+                setTimeout(typeWriter, currentSpeed);
+            }
+        }
+        
+        // Start the animation
+        typeWriter();
+    }
     
     // Switch to console tab to show the result
     const consoleTab = document.querySelector('.tab[data-tab="console"]');
@@ -488,6 +471,76 @@ enhancedTooltipStyles.textContent = `
     .tooltip-prompt-input::placeholder {
         color: var(--text-light);
         opacity: 0.7;
+    }
+    
+    /* Styles for copy notification */
+    .copy-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1100;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .copy-notification.error {
+        background-color: #e53935;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Styles for copied code display */
+    .copied-text-display {
+        margin: 20px 0;
+        background-color: var(--bg-light);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .copied-text-display h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    
+    .copied-code-container {
+        background-color: var(--bg-dark);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .code-block {
+        margin: 0;
+        padding: 15px;
+        font-family: 'Fira Code', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-x: auto;
+        color: var(--text-primary);
+    }
+    
+    .code-block.html {
+        color: #e34c26;
+    }
+    
+    .code-block.css {
+        color: #563d7c;
+    }
+    
+    .code-block.javascript {
+        color: #f0db4f;
     }
 `;
 

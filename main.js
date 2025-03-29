@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const pasteNotification = document.getElementById('pasteNotification');
     const dropzone = document.getElementById('dropzone');
     const recordButton = document.getElementById('recordButton');
+    createVideoModal(); // <-- Must be present
 
     if (recordButton) {
         let isRecording = false;
@@ -297,6 +298,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Toggle dropdown when hamburger button is clicked
     hamburgerBtn.addEventListener('click', function(e) {
         e.stopPropagation();
+        const dropdown = document.getElementById('hamburgerDropdown');
+        if (tutorialActive) {
+            // If tutorial is active, prevent closing
+            dropdown.classList.add('show');
+            return;
+        }
         hamburgerDropdown.classList.toggle('show');
     });
     
@@ -347,7 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-
     function createPlaceholderCanvas(htmlContainer) {
         canvas = document.createElement('canvas');
         canvas.width = 360;
@@ -373,8 +379,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         jsOutput.innerHTML = 'Default image not found. Please upload, paste or drag and drop an image to start animation';
     }
-
-    
 
     // Filter files when typing in search
     jsSearchInput.addEventListener('input', function() {
@@ -735,6 +739,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle image upload
     function handleImageUpload(event) {
+        if (tutorialActive && !validateWorkflowProgress('image-uploaded')) {
+            return;
+        }
+    
         const file = event.target.files[0];
         if (!file) return;
 
@@ -836,8 +844,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Update progress if available
                     if (progress !== undefined) {
-                        const progressPercent = Math.round(progress * 100);
-                        jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
+                        // const progressPercent = Math.round(progress * 100);
+                        // jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
                     }
                 }
             };

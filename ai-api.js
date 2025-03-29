@@ -4,8 +4,6 @@ const cssDeepseekBtn = document.getElementById('cssDeepseekBtn');
 const jsDeepseekBtn = document.getElementById('jsDeepseekBtn');
 const magicBtn = document.getElementById('magicBtn'); // Add this line to get the main Generate button
 
-
-// Add event listener for the main Generate button
 if (magicBtn) {
   magicBtn.addEventListener('click', function() {
       // Call the AI API with the currently active editor (default to JS)
@@ -40,25 +38,30 @@ function updateApiStatus() {
 
 // Add fast typing effect function
 function typeIntoEditor(editor, text, callback) {
-  const originalContent = editor.value;
+  const lines = text.split('\n');
   editor.value = "";
-  let index = 0;
-  const typeSpeed = 0.2; // Lower is faster, adjust as needed
+  let lineIndex = 0;
+  const typeSpeed = 3; // milliseconds per line, adjust as needed
   
-
-  function typeNextCharacter() {
-    if (index < text.length) {
-      editor.value += text.charAt(index);
-      index++;
-      setTimeout(typeNextCharacter, typeSpeed);
+  function typeNextLine() {
+    if (lineIndex < lines.length) {
+      if (lineIndex > 0) {
+        editor.value += '\n';
+      }
+      editor.value += lines[lineIndex];
+      lineIndex++;
+      
+      // Scroll to the bottom of the editor as new content is added
+      editor.scrollTop = editor.scrollHeight;
+      
+      setTimeout(typeNextLine, typeSpeed);
     } else {
       if (callback) callback();
     }
   }
   
-  typeNextCharacter();
+  typeNextLine();
 }
-
 // Create loading indicator
 function showLoadingIndicator(outputArea) {
   let dots = 0;
@@ -150,7 +153,6 @@ function callAiApi(language, provider) {
   // Show loading indicator with animation
   const loadingInterval = showLoadingIndicator(outputArea);
 
-  // Make API call...
   fetch('https://tejas56789ce1.pythonanywhere.com/generate-code', {
       method: 'POST',
       headers: {
@@ -170,16 +172,50 @@ function callAiApi(language, provider) {
   })
   .then(data => {
       console.log("Data received:", data);
-      
-      // Clear loading indicator
+
       clearInterval(loadingInterval);
       
-      let cleanedCode = data.generatedCode;
+      function cleanGeneratedCode(code) {
+        // First, check if we have actual code content
+        if (!code || typeof code !== 'string') {
+          return '';
+        }
       
-      // Remove markdown code block syntax if present
-      cleanedCode = cleanedCode.replace(/^```(javascript|js|html|css)\n/i, '');
-      cleanedCode = cleanedCode.replace(/\n```$/i, '');
+        let cleanedCode = code;
+        
+        // Step 1: Remove any descriptive text before the actual code
+        // This covers phrases like "for a solar system visualization:", "Here's the improved JS code:", etc.
+        cleanedCode = cleanedCode.replace(/^[\s\S]*?(?:(?:here\'s|this is|for a|here is).*?(?:code|visualization|implementation|solution).*?:)/i, '');
+        
+        // Step 2: If we have a markdown code block, extract just the code inside it
+        const codeBlockMatch = cleanedCode.match(/```(?:javascript|js|html|css)?([\s\S]*?)```/i);
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          cleanedCode = codeBlockMatch[1].trim();
+        } else {
+          // If no markdown code block found, remove any remaining markdown syntax
+          cleanedCode = cleanedCode.replace(/```(?:javascript|js|html|css)?/gi, '');
+          cleanedCode = cleanedCode.replace(/```/gi, '');
+        }
+        
+        // Step 3: Trim whitespace at start and end
+        cleanedCode = cleanedCode.trim();
+        
+        // Step 4: Check if the code starts with common code patterns
+        // If not, it might still have descriptive text at the beginning
+        if (!cleanedCode.match(/^(self\.|function|const|let|var|\/\/|\/\*|import|export|class|if|for|while)/i)) {
+          // Try to find the first occurrence of a code pattern and remove everything before it
+          const codeStartMatch = cleanedCode.match(/(self\.|function|const|let|var|\/\/|\/\*|import|export|class|if|for|while)/i);
+          if (codeStartMatch && codeStartMatch.index > 0) {
+            cleanedCode = cleanedCode.substring(codeStartMatch.index);
+          }
+        }
+        
+        return cleanedCode;
+      }
       
+      // Then when processing the API response data:
+      let cleanedCode = cleanGeneratedCode(data.generatedCode);
+      console.log('cleanedCode :>> ', cleanedCode);
       // Update the editor with the cleaned generated code using typing effect
       typeIntoEditor(editor, cleanedCode, () => {
         // Trigger localStorage save after typing is complete

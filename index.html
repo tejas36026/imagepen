@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Editor with AI APIs</title>
+    
     <style>
         * {
             margin: 0;
-            padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+            font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif
         }
-        
+        body { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif }
+    
         :root {
             --primary-color: #7e57c2;
             --primary-hover: #6a3fba;
@@ -24,10 +25,10 @@
             --html-color: #ff5252;
             --css-color: #42a5f5;
             --js-color: #ffca28;
-            --run-color: #4caf50;
+            --run-color: #7e57c2;
             --input-bg: #2d2d2d;
-            --deepseek-color: #00b4d8;
-            --deepseek-hover: #0096c7;
+            --deepseek-color: #7e57c2;
+            --deepseek-hover: #6a3fba;
             --credit-color: #ffa726;
             --scrollbar-track: #1e1e1e;
             --scrollbar-thumb: #555555;
@@ -53,7 +54,7 @@
             background: var(--scrollbar-track);
         }
         
-        ::-webkit-scrollbar-thumb {
+        ::-webkit scrollbar-thumb {
             background: var(--scrollbar-thumb);
             border-radius: 4px;
         }
@@ -70,7 +71,7 @@
         
         .header {
             background-color: var(--bg-medium);
-            padding: 12px 20px;
+            padding: 9px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -80,7 +81,7 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 9px;
             font-weight: bold;
             font-size: 18px;
         }
@@ -91,11 +92,11 @@
         
         .actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         .btn {
-            padding: 8px 12px;
+            padding: 6px 9px;
             background-color: var(--bg-light);
             border: 1px solid var(--border-color);
             color: var(--text-light);
@@ -105,7 +106,7 @@
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4.5px;
         }
         
         .btn:hover {
@@ -123,12 +124,32 @@
         }
         
         .btn-run {
-            background-color: var(--run-color);
-            border-color: #388e3c;
+            background-color: #7e57c2 !important;
+            border-color: #7e57c2 !important;
         }
         
         .btn-run:hover {
-            background-color: #388e3c;
+            background-color: #6a3fba !important;
+        }
+        
+        .editor-container {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            padding: 9px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 4px;
+            overflow: auto;
+        }
+    
+        .editor-container pre, .editor-container code {
+            font-family: inherit;
+        }
+    
+        /* Improve selection styling */
+        .editor-container ::selection {
+            background-color: rgba(97, 97, 255, 0.3);
         }
         
         .btn-deepseek {
@@ -160,7 +181,7 @@
         
         .editor-header {
             background-color: var(--bg-medium);
-            padding: 10px 15px;
+            padding: 7.5px 11.25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -170,14 +191,14 @@
         .language-tag {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 14px;
             font-weight: 500;
         }
         
         .editor-tools {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         .editor {
@@ -195,7 +216,7 @@
             border: none;
             resize: none;
             outline: none;
-            padding: 16px;
+            padding: 12px;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
             line-height: 1.5;
@@ -210,7 +231,7 @@
             background-color: var(--bg-medium);
             color: var(--text-secondary);
             text-align: right;
-            padding: 16px 5px;
+            padding: 12px 3.75px;
             user-select: none;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
@@ -237,7 +258,7 @@
         
         .viewer-header {
             background-color: var(--bg-medium);
-            padding: 10px 15px;
+            padding: 7.5px 11.25px;
             border-bottom: 1px solid var(--border-color);
             font-weight: 500;
             display: flex;
@@ -253,13 +274,13 @@
         .html-viewer {
             background-color: white;
             color: black;
-            padding: 20px;
+            padding: 15px;
         }
         
         .css-viewer, .js-viewer {
             background-color: var(--bg-medium);
             color: var(--text-light);
-            padding: 10px;
+            padding: 7.5px;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
             white-space: pre-wrap;
@@ -269,7 +290,7 @@
         .js-viewer {
             border-top: 1px solid var(--border-color);
         }
-
+    
         .html-btn { 
             background-color: var(--html-color); 
             color: white;
@@ -324,7 +345,7 @@
         .modal {
             background-color: var(--bg-medium);
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             width: 500px;
             max-width: 90%;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -334,9 +355,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            padding-bottom: 7.5px;
         }
         
         .modal-title {
@@ -353,22 +374,22 @@
         }
         
         .modal-body {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 11.25px;
         }
         
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
         }
         
         .form-input {
             width: 100%;
-            padding: 10px;
+            padding: 7.5px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-light);
@@ -384,14 +405,14 @@
         .modal-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 7.5px;
         }
         
         /* Status indicator */
         .api-status {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4.5px;
             font-size: 13px;
             color: var(--text-secondary);
         }
@@ -415,7 +436,7 @@
         }
         
         .tab {
-            padding: 8px 16px;
+            padding: 6px 12px;
             cursor: pointer;
             font-size: 13px;
             border-right: 1px solid var(--border-color);
@@ -433,7 +454,7 @@
         
         /* Line numbers */
         textarea {
-            padding-left: 45px; /* Make room for line numbers */
+            padding-left: 33.75px; /* Make room for line numbers */
         }
         
         /* Image Upload Styles */
@@ -442,10 +463,10 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            padding: 10px;
+            padding: 7.5px;
             border: 2px dashed var(--border-color);
             border-radius: 8px;
-            margin-top: 10px;
+            margin-top: 7.5px;
             transition: all 0.3s ease;
             background-color: var(--bg-light);
         }
@@ -456,11 +477,11 @@
         
         .image-upload-label {
             cursor: pointer;
-            padding: 10px;
+            padding: 7.5px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 3.75px;
             width: 100%;
         }
         
@@ -471,7 +492,7 @@
         .uploaded-image-preview {
             max-width: 70%;
             max-height: 70%;
-            margin-top: 10px;
+            margin-top: 7.5px;
             border-radius: 4px;
             display: none;
         }
@@ -489,8 +510,8 @@
         .credit-container {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 15px;
+            gap: 6px;
+            padding: 9px 11.25px;
             border-bottom: 1px solid var(--border-color);
         }
         
@@ -509,8 +530,8 @@
             background-color: var(--bg-light);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 11.25px;
             transition: all 0.2s ease;
             cursor: pointer;
         }
@@ -528,7 +549,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 7.5px;
         }
         
         .plan-name {
@@ -537,13 +558,13 @@
         }
         
         .plan-price {
-            font-weight: 500;
+            font-weight: 5;
             color: var(--credit-color);
         }
         
         .plan-features {
-            margin-top: 10px;
-            margin-bottom: 5px;
+            margin-top: 7.5px;
+            margin-bottom: 3.75px;
             color: var(--text-secondary);
             font-size: 14px;
         }
@@ -551,8 +572,8 @@
         .plan-feature {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 5px;
+            gap: 4.5px;
+            margin-bottom: 3.75px;
         }
         
         .toggle-switch {
@@ -592,6 +613,20 @@
             border-radius: 50%;
         }
         
+    
+        .copy-notification {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4.5px 9px;
+            border-radius: 4px;
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            transition: opacity 0.3s ease;
+        }
+    
         input:checked + .toggle-slider {
             background-color: var(--primary-color);
         }
@@ -601,14 +636,14 @@
         }
         
         .toggle-label {
-            margin-left: 10px;
+            margin-left: 7.5px;
         }
-
+    
         .ai-selection {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 11.25px;
         }
         
         .ai-selection-label {
@@ -618,11 +653,11 @@
         
         .ai-provider {
             display: flex;
-            gap: 10px;
+            gap: 7.5px;
         }
         
         .provider-btn {
-            padding: 8px 12px;
+            padding: 6px 9px;
             border-radius: 6px;
             cursor: pointer;
             background-color: var(--bg-light);
@@ -641,7 +676,6 @@
             border-color: var(--deepseek-hover);
         }
         
-        /* Responsiveness */
         @media (max-width: 768px) {
             .editors-container, .viewers-container {
                 flex-direction: column;
@@ -666,12 +700,12 @@
         .image-control-panel {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
+            gap: 7.5px;
+            padding: 9px 11.25px;
             border-bottom: 1px solid var(--border-color);
         }
         
-
+    
         * {
             margin: 0;
             padding: 0;
@@ -693,8 +727,8 @@
             --js-color: #ffca28;
             --run-color: #4caf50;
             --input-bg: #2d2d2d;
-            --deepseek-color: #00b4d8;
-            --deepseek-hover: #0096c7;
+            --deepseek-color: #7e57c2;
+            --deepseek-hover: #6a3fba;
             --credit-color: #ffa726;
             --scrollbar-track: #1e1e1e;
             --scrollbar-thumb: #555555;
@@ -737,7 +771,7 @@
         
         .header {
             background-color: var(--bg-medium);
-            padding: 12px 20px;
+            padding: 9px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -747,7 +781,7 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 9px;
             font-weight: bold;
             font-size: 18px;
         }
@@ -758,11 +792,11 @@
         
         .actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         .btn {
-            padding: 8px 12px;
+            padding: 6px 9px;
             background-color: var(--bg-light);
             border: 1px solid var(--border-color);
             color: var(--text-light);
@@ -772,7 +806,7 @@
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4.5px;
         }
         
         .btn:hover {
@@ -787,15 +821,6 @@
         
         .btn-primary:hover {
             background-color: var(--primary-hover);
-        }
-        
-        .btn-run {
-            background-color: var(--run-color);
-            border-color: #388e3c;
-        }
-        
-        .btn-run:hover {
-            background-color: #388e3c;
         }
         
         .btn-deepseek {
@@ -827,7 +852,7 @@
         
         .editor-header {
             background-color: var(--bg-medium);
-            padding: 10px 15px;
+            padding: 7.5px 11.25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -837,14 +862,14 @@
         .language-tag {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 5;
         }
         
         .editor-tools {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         .editor {
@@ -862,7 +887,7 @@
             border: none;
             resize: none;
             outline: none;
-            padding: 16px;
+            padding: 12px;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
             line-height: 1.5;
@@ -877,7 +902,7 @@
             background-color: var(--bg-medium);
             color: var(--text-secondary);
             text-align: right;
-            padding: 16px 5px;
+            padding: 12px 3.75px;
             user-select: none;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
@@ -904,9 +929,9 @@
         
         .viewer-header {
             background-color: var(--bg-medium);
-            padding: 10px 15px;
+            padding: 7.5px 11.25px;
             border-bottom: 1px solid var(--border-color);
-            font-weight: 500;
+            font-weight: 5;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -920,13 +945,13 @@
         .html-viewer {
             background-color: white;
             color: black;
-            padding: 20px;
+            padding: 15px;
         }
         
         .css-viewer, .js-viewer {
             background-color: var(--bg-medium);
             color: var(--text-light);
-            padding: 10px;
+            padding: 7.5px;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 14px;
             white-space: pre-wrap;
@@ -936,7 +961,7 @@
         .js-viewer {
             border-top: 1px solid var(--border-color);
         }
-
+    
         .html-btn { 
             background-color: var(--html-color); 
             color: white;
@@ -964,15 +989,7 @@
             background-color: #ffb300;
         }
         
-        .deepseek-btn {
-            background-color: var(--deepseek-color);
-            color: white;
-        }
-        
-        .deepseek-btn:hover {
-            background-color: var(--deepseek-hover);
-        }
-        
+
         /* API Key Modal */
         .modal-overlay {
             position: fixed;
@@ -991,7 +1008,7 @@
         .modal {
             background-color: var(--bg-medium);
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             width: 500px;
             max-width: 90%;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -1001,9 +1018,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            padding-bottom: 7.5px;
         }
         
         .modal-title {
@@ -1020,22 +1037,22 @@
         }
         
         .modal-body {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 11.25px;
         }
         
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
+            margin-bottom: 6px;
+            font-weight: 5;
         }
         
         .form-input {
             width: 100%;
-            padding: 10px;
+            padding: 7.5px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-light);
@@ -1051,14 +1068,14 @@
         .modal-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 7.5px;
         }
         
         /* Status indicator */
         .api-status {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4.5px;
             font-size: 13px;
             color: var(--text-secondary);
         }
@@ -1082,7 +1099,7 @@
         }
         
         .tab {
-            padding: 8px 16px;
+            padding: 6px 12px;
             cursor: pointer;
             font-size: 13px;
             border-right: 1px solid var(--border-color);
@@ -1100,7 +1117,7 @@
         
         /* Line numbers */
         textarea {
-            padding-left: 45px; /* Make room for line numbers */
+            padding-left: 33.75px; /* Make room for line numbers */
         }
         
         /* Image Upload Styles */
@@ -1109,10 +1126,10 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            padding: 10px;
+            padding: 7.5px;
             border: 2px dashed var(--border-color);
             border-radius: 8px;
-            margin-top: 10px;
+            margin-top: 7.5px;
             transition: all 0.3s ease;
             background-color: var(--bg-light);
         }
@@ -1123,11 +1140,11 @@
         
         .image-upload-label {
             cursor: pointer;
-            padding: 10px;
+            padding: 7.5px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 3.75px;
             width: 100%;
         }
         
@@ -1138,7 +1155,7 @@
         .uploaded-image-preview {
             max-width: 70%;
             max-height: 70%;
-            margin-top: 10px;
+            margin-top: 7.5px;
             border-radius: 4px;
             display: none;
         }
@@ -1156,8 +1173,8 @@
         .credit-container {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 15px;
+            gap: 6px;
+            padding: 9px 11.25px;
             border-bottom: 1px solid var(--border-color);
         }
         
@@ -1166,7 +1183,7 @@
         }
         
         .credit-count {
-            font-weight: 500;
+            font-weight: 5;
             color: var(--text-light);
             flex-grow: 1;
         }
@@ -1176,8 +1193,8 @@
             background-color: var(--bg-light);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 11.25px;
             transition: all 0.2s ease;
             cursor: pointer;
         }
@@ -1195,7 +1212,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 7.5px;
         }
         
         .plan-name {
@@ -1204,13 +1221,13 @@
         }
         
         .plan-price {
-            font-weight: 500;
+            font-weight: 5;
             color: var(--credit-color);
         }
         
         .plan-features {
-            margin-top: 10px;
-            margin-bottom: 5px;
+            margin-top: 7.5px;
+            margin-bottom: 3.75px;
             color: var(--text-secondary);
             font-size: 14px;
         }
@@ -1218,8 +1235,8 @@
         .plan-feature {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 5px;
+            gap: 4.5px;
+            margin-bottom: 3.75px;
         }
         
         .toggle-switch {
@@ -1259,7 +1276,7 @@
             border-radius: 50%;
         }
         
-        input:checked + .toggle-slider {
+        .toggle-slider {
             background-color: var(--primary-color);
         }
         
@@ -1268,28 +1285,28 @@
         }
         
         .toggle-label {
-            margin-left: 10px;
+            margin-left: 7.5px;
         }
-
+    
         .ai-selection {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 11.25px;
         }
         
         .ai-selection-label {
-            font-weight: 500;
+            font-weight: 5;
             flex-shrink: 0;
         }
         
         .ai-provider {
             display: flex;
-            gap: 10px;
+            gap: 7.5px;
         }
         
         .provider-btn {
-            padding: 8px 12px;
+            padding: 6px 9px;
             border-radius: 6px;
             cursor: pointer;
             background-color: var(--bg-light);
@@ -1308,7 +1325,6 @@
             border-color: var(--deepseek-hover);
         }
         
-        /* Responsiveness */
         @media (max-width: 768px) {
             .editors-container, .viewers-container {
                 flex-direction: column;
@@ -1333,384 +1349,85 @@
         .image-control-panel {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
+            gap: 7.5px;
+            padding: 9px 11.25px;
             border-bottom: 1px solid var(--border-color);
         }
         
         .image-control-panel label {
             font-size: 14px;
             color: var(--text-light);
-            font-weight: 500;
+            font-weight: 5;
             white-space: nowrap;
         }
-
+    
         .image-control-panel input {
             width: 60px;
-            padding: 6px;
+            padding: 4.5px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
             color: var(--text-light);
         }
-
+    
         /* Add button styling for consistency */
         .image-control-panel .btn {
-            padding: 6px 12px;
+            padding: 4.5px 9px;
             font-size: 13px;
             white-space: nowrap;
         }
-
+    
         .processed-images-container {
-            padding: 15px;
+            padding: 11.25px;
             background-color: var(--bg-light);
             border-radius: 6px;
-            margin: 15px 0;
+            margin: 11.25px 0;
         }
-
+    
         .processed-images-container h3 {
             font-size: 16px;
-            margin-bottom: 10px;
+            margin-bottom: 7.5px;
             color: var(--text-light);
         }
          
         .claude-api-btn {
-            padding: 6px 12px;
+            padding: 4.5px 9px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             border: none;
-            font-weight: 500;
+            font-weight: 5;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4.5px;
             transition: all 0.2s ease;
         }
         
         .processed-images-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
+            gap: 11.25px;
         }
-
+    
         .processed-image-container {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-
+    
         .processed-image-container canvas {
             width: 100%;
             height: auto;
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
-
+    
         .image-label {
-            margin-top: 5px;
+            margin-top: 3.75px;
             font-size: 12px;
             color: var(--text-secondary);
         }
-
-        /* Prompt input styles */
-        .prompt-container {
-            display: flex;
-            background-color: var(--bg-medium);
-            flex-grow: 1;
-            justify-content: center; /* Centers content horizontally */
-            margin: 0 auto; /* Centers the container itself if it has a width */
-        }
-        .prompt-input {
-            flex: 1;
-            padding: 12px 12px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-light);
-            font-size: 14px;
-            width: 300px;
-            justify-content: center; /* Centers content horizontally */
-            margin: 0 auto; 
-        }
-
-        .prompt-input:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            justify-content: center; /* Centers content horizontally */
-            margin: 0 auto; 
-        }
-        
-        /* Hamburger Menu Styles */
-        .hamburger-menu {
-            position: relative;
-            display: inline-block;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .hamburger-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .hamburger-btn:hover {
-            background-color: var(--primary-hover);
-        }
-        
-        .hamburger-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            width: 300px;
-            background-color: var(--bg-medium);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 100;
-            display: none;
-        }
-        
-        .hamburger-dropdown.show {
-            display: block;
-        }
-
-        /* JS Library Dropdown Styles */
-        .js-library-dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: var(--bg-medium);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            width: 320px;
-            max-height: 500px;
-            z-index: 100;
-            display: none;
-            overflow: hidden;
-        }
-
-        .dropdown-menu.show {
-            display: block;
-        }
-
-        .dropdown-search {
-            padding: 10px;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            background-color: var(--bg-medium);
-            z-index: 2;
-        }
-
-        .dropdown-search input {
-            width: 100%;
-            padding: 8px 10px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-light);
-            border-radius: 4px;
-            font-size: 13px;
-        }
-
-        .dropdown-list {
-            max-height: 450px;
-            overflow-y: auto;
-        }
-
-        .dropdown-item {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-            display: flex;
-            align-items: center;
-            font-size: 13px;
-        }
-
-        .dropdown-item:hover {
-            background-color: var(--bg-light);
-        }
-
-        .dropdown-item:last-child {
-            border-bottom: none;
-        }
-
-        .dropdown-loading {
-            padding: 15px;
-            text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .file-icon {
-            margin-right: 8px;
-            color: var(--js-color);
-            flex-shrink: 0;
-        }
-
-        .dropdown-category {
-            padding: 8px 15px;
-            background-color: var(--bg-dark);
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 12px;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .file-path {
-            display: block;
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .dropdown-item-content {
-            overflow: hidden;
-        }
-        
-        /* Clipboard paste notification */
-        .paste-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--primary-color);
-            color: var(--text-light);
-            padding: 12px 16px;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 2000;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease-out;
-        }
-        
-        .paste-notification.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .dropzone {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(126, 87, 194, 0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            display: none;
-        }
-        
-        .dropzone-content {
-            background-color: var(--bg-medium);
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .dropzone-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-
-
-        .image-control-panel label {
-            font-size: 14px;
-            color: var(--text-light);
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .image-control-panel input {
-            width: 60px;
-            padding: 6px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-light);
-        }
-
-        /* Add button styling for consistency */
-        .image-control-panel .btn {
-            padding: 6px 12px;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .processed-images-container {
-            padding: 15px;
-            background-color: var(--bg-light);
-            border-radius: 6px;
-            margin: 15px 0;
-        }
-
-        .processed-images-container h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: var(--text-light);
-        }
-         
-        .claude-api-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            border: none;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-        }
-        
-        .processed-images-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-        }
-
-        .processed-image-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .processed-image-container canvas {
-            width: 100%;
-            height: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-        }
-
-        .image-label {
-            margin-top: 5px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
+    
         /* Prompt input styles */
         .prompt-container {
             display: flex;
@@ -1720,9 +1437,10 @@
             margin: 0 auto; /* Centers the container itself if it has a width */
             /* You may also want to add a max-width if appropriate */
         }
+        
         .prompt-input {
             flex: 1;
-            padding: 12px 12px;
+            padding: 9px 9px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -1732,7 +1450,7 @@
             justify-content: center; /* Centers content horizontally */
             margin: 0 auto; 
         }
-
+    
         .prompt-input:focus {
             border-color: var(--primary-color);
             outline: none;
@@ -1752,7 +1470,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px;
+            padding: 9px;
             /* background-color: var(--bg-light); */
             /* border: 1px solid var(--border-color); */
             border-radius: 6px;
@@ -1780,13 +1498,13 @@
         .hamburger-dropdown.show {
             display: block;
         }
-
+    
         /* JS Library Dropdown Styles */
         .js-library-dropdown {
             position: relative;
             display: inline-block;
         }
-
+    
         .dropdown-menu {
             position: absolute;
             top: 100%;
@@ -1801,37 +1519,37 @@
             display: none;
             overflow: hidden;
         }
-
+    
         .dropdown-menu.show {
             display: block;
         }
-
+    
         .dropdown-search {
-            padding: 10px;
+            padding: 7.5px;
             border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             background-color: var(--bg-medium);
             z-index: 2;
         }
-
+    
         .dropdown-search input {
             width: 100%;
-            padding: 8px 10px;
+            padding: 6px 7.5px;
             background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-light);
             border-radius: 4px;
             font-size: 13px;
         }
-
+    
         .dropdown-list {
             max-height: 450px;
             overflow-y: auto;
         }
-
+    
         .dropdown-item {
-            padding: 10px 15px;
+            padding: 7.5px 11.25px;
             cursor: pointer;
             border-bottom: 1px solid var(--border-color);
             transition: background-color 0.2s ease;
@@ -1839,94 +1557,442 @@
             align-items: center;
             font-size: 13px;
         }
-
+    
         .dropdown-item:hover {
             background-color: var(--bg-light);
         }
-
+    
         .dropdown-item:last-child {
             border-bottom: none;
         }
-
+    
         .dropdown-loading {
-            padding: 15px;
+            padding: 11.25px;
             text-align: center;
             color: var(--text-secondary);
         }
-
+    
         .file-icon {
-            margin-right: 8px;
+            margin-right: 6px;
             color: var(--js-color);
             flex-shrink: 0;
         }
-
+    
         .dropdown-category {
-            padding: 8px 15px;
+            padding: 6px 11.25px;
             background-color: var(--bg-dark);
             color: var(--text-secondary);
-            font-weight: 500;
+            font-weight: 5;
             font-size: 12px;
             border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 1;
         }
-
+    
         .file-path {
             display: block;
             font-size: 11px;
             color: var(--text-secondary);
-            margin-top: 2px;
+            margin-top: 1.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
+    
         .dropdown-item-content {
             overflow: hidden;
         }
-
+        
+        /* Clipboard paste notification */
+        .paste-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            padding: 9px 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 7.5px;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-out;
+        }
+        
+        .paste-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .dropzone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(126, 87, 194, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .dropzone-content {
+            background-color: var(--bg-medium);
+            padding: 22.5px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dropzone-icon {
+            font-size: 48px;
+            margin-bottom: 11.25px;
+            color: var(--primary-color);
+        }
+    
+        .image-control-panel label {
+            font-size: 14px;
+            color: var(--text-light);
+            font-weight: 5;
+            white-space: nowrap;
+        }
+    
+        .image-control-panel input {
+            width: 60px;
+            padding: 4.5px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-light);
+        }
+    
+        .image-control-panel .btn {
+            padding: 4.5px 9px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+    
+        .processed-images-container {
+            padding: 11.25px;
+            background-color: var(--bg-light);
+            border-radius: 6px;
+            margin: 11.25px 0;
+        }
+    
+        .processed-images-container h3 {
+            font-size: 16px;
+            margin-bottom: 7.5px;
+            color: var(--text-light);
+        }
+         
+        .claude-api-btn {
+            padding: 4.5px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            border: none;
+            font-weight: 5;
+            display: flex;
+            align-items: center;
+            gap: 4.5px;
+            transition: all 0.2s ease;
+        }
+        
+        .processed-images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 11.25px;
+        }
+    
+        .processed-image-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    
+        .processed-image-container canvas {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+    
+        .image-label {
+            margin-top: 3.75px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+    
+        .prompt-container {
+            display: flex;
+            background-color: var(--bg-medium);
+            flex-grow: 1;
+            justify-content: center; /* Centers content horizontally */
+            margin: 0 auto; /* Centers the container itself if it has a width */
+            /* You may also want to add a max-width if appropriate */
+        }
+    
+        .prompt-input {
+            flex: 1;
+            padding: 9px 9px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-light);
+            font-size: 14px;
+            width: 300px;
+            justify-content: center; /* Centers content horizontally */
+            margin: 0 auto; 
+        }
+    
+        .prompt-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            justify-content: center; /* Centers content horizontally */
+            margin: 0 auto; 
+        }
+    
+        .hamburger-menu {
+            position: relative;
+            display: inline-block;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hamburger-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px;
+            /* background-color: var(--bg-light); */
+            /* border: 1px solid var(--border-color); */
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .hamburger-btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .hamburger-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 300px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            display: none;
+        }
+        
+        .hamburger-dropdown.show {
+            display: block;
+        }
+    
+        .js-library-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+    
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--bg-medium);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 320px;
+            max-height: 500px;
+            z-index: 100;
+            display: none;
+            overflow: hidden;
+        }
+    
+        .dropdown-menu.show {
+            display: block;
+        }
+    
+        .dropdown-search {
+            padding: 7.5px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-medium);
+            z-index: 2;
+        }
+    
+        .dropdown-search input {
+            width: 100%;
+            padding: 6px 7.5px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    
+        .dropdown-list {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+    
+        .dropdown-item {
+            padding: 7.5px 11.25px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+    
+        .dropdown-item:hover {
+            background-color: var(--bg-light);
+        }
+    
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+    
+        .dropdown-loading {
+            padding: 11.25px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+    
+        .file-icon {
+            margin-right: 6px;
+            color: var(--js-color);
+            flex-shrink: 0;
+        }
+    
+        .dropdown-category {
+            padding: 6px 11.25px;
+            background-color: var(--bg-dark);
+            color: var(--text-secondary);
+            font-weight: 5;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    
+        .file-path {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 1.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    
+        .dropdown-item-content {
+            overflow: hidden;
+        }
+    
         body.fullscreen-mode .header,
-body.fullscreen-mode .editors-container,
-body.fullscreen-mode .css-js-viewer-column {
-    display: none !important;
+        body.fullscreen-mode .editors-container,
+        body.fullscreen-mode .css-js-viewer-column {
+            display: none !important;
+        }
+    
+        body.fullscreen-mode .viewers-container {
+            height: 100vh;
+        }
+    
+        body.fullscreen-mode .html-viewer-column {
+            flex: 1;
+            border: none;
+        }
+    
+        body.fullscreen-mode .html-viewer {
+            background-color: white;
+            height: calc(100vh - 45px); /* Adjust for header height */
+            max-height: none;
+            padding: 0; /* Remove padding to maximize space */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Prevent scrolling */
+        }
+    
+        body.fullscreen-mode .viewer-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    
+        body.fullscreen-mode canvas {
+            display: block;
+            max-width: none !important; /* Override inline max-width */
+        }
+
+        .tutorial-menu-btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-light);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    transition: all 0.2s ease;
 }
 
-body.fullscreen-mode .viewers-container {
-    height: 100vh;
+.tutorial-menu-btn:hover {
+    background: rgba(126, 87, 194, 0.1);
+    color: var(--primary-color);
 }
 
-body.fullscreen-mode .html-viewer-column {
-    flex: 1;
+.tutorial-menu-btn svg {
+    flex-shrink: 0;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     border: none;
 }
 
-body.fullscreen-mode .html-viewer {
-    background-color: white;
-    height: calc(100vh - 45px); /* Adjust for header height */
-    max-height: none;
-    padding: 0; /* Remove padding to maximize space */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; /* Prevent scrolling */
+.video-modal-content {
+    max-width: 1200px; /* Larger size for YouTube */
 }
 
-body.fullscreen-mode .viewer-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+.video-fallback {
+    padding: 20px;
+    background: #ffebee;
+    border-radius: 8px;
+    margin: 20px;
+    color: #b71c1c;
 }
 
-body.fullscreen-mode canvas {
-    display: block;
-    max-width: none !important; /* Override inline max-width */
+.video-fallback a {
+    color: #d32f2f;
+    text-decoration: underline;
 }
 
-
-
-        
+.video-fallback ol {
+    margin: 10px 0 0 20px;
+}
     </style>
+
 </head>
 <body>
     <div class="header">
@@ -1993,6 +2059,15 @@ body.fullscreen-mode canvas {
                             Buy
                         </button>
                     </div>
+
+                    <button class="tutorial-menu-btn" id="tutorialMenuButton">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Start Tutorial
+                    </button>
                 </div>
             </div>
             
@@ -2004,9 +2079,7 @@ body.fullscreen-mode canvas {
             </button>
         </div>
     </div>
-    
     <div class="editors-container">
-        <!-- HTML Editor Column -->
         <div class="editor-column">
             <div class="editor-header html-column-header">
                 <div class="language-tag">
@@ -2027,7 +2100,7 @@ body.fullscreen-mode canvas {
                 </div>
             </div>
             <div class="editor">
-                <div class="textarea-line-numbers" id="htmlLineNumbers"></div>
+                <div class="textarea-line-numbers" id="htmlLineNumbers" style="display: none;"></div>
                 <textarea id="htmlEditor" placeholder="Type your HTML here..."></textarea>
             </div>
         </div>
@@ -2053,7 +2126,7 @@ body.fullscreen-mode canvas {
                 </div>
             </div>
             <div class="editor">
-                <div class="textarea-line-numbers" id="cssLineNumbers"></div>
+                <div class="textarea-line-numbers" id="cssLineNumbers" style="display: none;"></div>
                 <textarea id="cssEditor" placeholder="Type your CSS here..."></textarea>
             </div>
         </div>
@@ -2069,7 +2142,6 @@ body.fullscreen-mode canvas {
                     <span>JavaScript</span>
                 </div>
                 <div class="editor-tools">
-    
                     <button class="claude-api-btn deepseek-btn" id="jsDeepseekBtn"> Generate
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
@@ -2078,18 +2150,18 @@ body.fullscreen-mode canvas {
                     </button>
                 </div>
             </div>
+
             <div class="editor">
-                <div class="textarea-line-numbers" id="jsLineNumbers"></div>
+                <div class="textarea-line-numbers" id="jsLineNumbers" style="display: none;"></div>
                 <textarea id="jsEditor" placeholder="Type your JavaScript here..."></textarea>
             </div>
         </div>
     </div>
-    
     <div class="viewers-container">
         <!-- HTML Viewer -->
         <div class="html-viewer-column">
             <div class="viewer-header">
-                <span>Preview</span>
+                <span></span>
                 <div style="display: flex; gap: 8px; align-items: center;">
 
                 <div class="js-library-dropdown">
@@ -2099,7 +2171,11 @@ body.fullscreen-mode canvas {
                             <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
                         </svg>
                         JS Library
-                    </button>  
+                    </button>
+
+                   
+        
+                    
                     <div class="dropdown-menu" id="jsLibraryMenu">
                         <div class="dropdown-search">
                             <input type="text" id="jsSearchInput" placeholder="Search JS files...">
@@ -2117,12 +2193,12 @@ body.fullscreen-mode canvas {
                     </svg>
                     
                 </button>
-                <!-- Add this inside the viewer-header div, right before the refreshPreview button -->
-<button class="btn" id="toggleFullscreen">
+
+                <button class="btn" id="toggleFullscreen">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
     </svg>
-</button>
+                </button>
                 <button class="btn btn-run" id="refreshPreview">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -2130,14 +2206,15 @@ body.fullscreen-mode canvas {
                     Refresh
                 </button>
 
-            </div>
+</div>
+
             </div>
             <div class="viewer html-viewer" id="htmlOutput">
                 <!-- HTML output will be displayed here -->
             </div>
         </div>
         
-
+        <!-- CSS & JS Viewers -->
         <div class="css-js-viewer-column">
             <div class="tab-switcher">
                 <div class="tab active" data-tab="console">Console</div>
@@ -2151,7 +2228,6 @@ body.fullscreen-mode canvas {
             </div>
         </div>
     </div>
-
     <div class="modal-overlay" id="apiKeyModal">
         <div class="modal">
             <div class="modal-header">
@@ -2193,56 +2269,58 @@ body.fullscreen-mode canvas {
                 <button class="close-modal" id="closeCreditsModal">&times;</button>
             </div>
             <div class="modal-body">
-            <p style="margin-bottom: 15px;">Purchase credits to use the creator's DeepSeek API without setting up your own API key.</p>
-            <!-- Payment plans section in creditsModal -->
-            <div class="payment-plan" data-plan="basic">
-                <div class="payment-plan-header">
-                    <div class="plan-name">Standard Plan</div>
-                    <div class="plan-price">$29/month</div>
-                </div>
-                <div class="plan-description">For individual developers</div>
-                <div class="plan-features">
-                    <div class="plan-feature">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        200 API calls per month
-                    </div>
-                    <div class="plan-feature">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        1 credit used per generate click
-                    </div>
-                </div>
-            </div>
-            <div class="payment-plan" data-plan="pro">
-                <div class="payment-plan-header">
-                    <div class="plan-name">Enterprise Plan</div>
-                    <div class="plan-price">$299/month</div>
-                </div>
-                <div class="plan-description">For professional teams</div>
-                <div class="plan-features">
-                    <div class="plan-feature">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        100 million tokens included
-                    </div>
-                    <div class="plan-feature">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        1,000 tokens per API call
-                    </div>
-                    <div class="plan-feature">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Each click consumes 1,000 tokens
-                    </div>
-                </div>
-            </div>
+                <p style="margin-bottom: 15px;">Purchase credits to use the creator's DeepSeek API without setting up your own API key.</p>
+                
+<!-- Payment plans section in creditsModal -->
+<div class="payment-plan" data-plan="basic">
+    <div class="payment-plan-header">
+        <div class="plan-name">Standard Plan</div>
+        <div class="plan-price">$29/month</div>
+    </div>
+    <div class="plan-description">For individual developers</div>
+    <div class="plan-features">
+        <div class="plan-feature">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            200 API calls per month
+        </div>
+        <div class="plan-feature">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            1 credit used per generate click
+        </div>
+    </div>
+</div>
+
+<div class="payment-plan" data-plan="pro">
+    <div class="payment-plan-header">
+        <div class="plan-name">Enterprise Plan</div>
+        <div class="plan-price">$299/month</div>
+    </div>
+    <div class="plan-description">For professional teams</div>
+    <div class="plan-features">
+        <div class="plan-feature">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            100 million tokens included
+        </div>
+        <div class="plan-feature">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            1,000 tokens per API call
+        </div>
+        <div class="plan-feature">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Each click consumes 1,000 tokens
+        </div>
+    </div>
+</div>
             </div>
             <div class="modal-footer">
                 <button class="btn" id="cancelCredits">Cancel</button>
@@ -2281,6 +2359,7 @@ body.fullscreen-mode canvas {
     </div>
     <canvas id="animationCanvas" class="animation-canvas"></canvas>
     <div class="processed-images-container" id="processedImagesContainer" style= "display:none">
+        <!-- Processed images will be displayed here -->
     </div>
     <div class="paste-notification" id="pasteNotification">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2289,8 +2368,8 @@ body.fullscreen-mode canvas {
             <polyline points="21 15 16 10 5 21"></polyline>
         </svg>
         <span>Image pasted successfully!</span>
-    </div>
-
+    </div> 
+    <!-- Drag and Drop Zone -->
     <div class="dropzone" id="dropzone">
         <div class="dropzone-content">
             <div class="dropzone-icon">
@@ -2304,10 +2383,13 @@ body.fullscreen-mode canvas {
             <p>Release to upload the image</p>
         </div>
     </div>
-
+<script src="tutorial.js"></script>
 <script src="main.js"></script>
 <script src="api-payment.js"></script>
 <script src="ai-api.js"></script>
+<script src="container-resize.js"></script>
+<script src="text-analysis-api.js"></script>
+
 <script>
 </script>
 </body>

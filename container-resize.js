@@ -1,550 +1,412 @@
-// container-resize.js - Add this as a new file
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Elements to make resizable
-    const editorsContainer = document.querySelector('.editors-container');
-    const viewersContainer = document.querySelector('.viewers-container');
-    const editorColumns = document.querySelectorAll('.editor-column');
-    const htmlViewerColumn = document.querySelector('.html-viewer-column');
-    const cssJsViewerColumn = document.querySelector('.css-js-viewer-column');
-    
-    // Add resize handles to editor columns
-    editorColumns.forEach((column, index) => {
-        if (index < editorColumns.length - 1) { // Don't add to the last column
-            addVerticalResizeHandle(column);
-        }
-    });
-    
-    // Add horizontal resize handle between editors and viewers
-    addHorizontalResizeHandle(editorsContainer);
-    
-    // Add vertical resize handle between HTML viewer and Console/CSS viewer
-    addVerticalResizeHandle(htmlViewerColumn);
-    
-    // Function to add vertical resize handle (for columns)
-    function addVerticalResizeHandle(element) {
-        const handle = document.createElement('div');
-        handle.className = 'resize-handle vertical-resize-handle';
-        handle.innerHTML = `
-            <div class="resize-handle-inner">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-            </div>
-        `;
-        element.appendChild(handle);
-        
-        let startX, startWidth, nextStartWidth;
-        
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startX = e.clientX;
-            startWidth = element.offsetWidth;
-            const nextElement = element.nextElementSibling;
-            nextStartWidth = nextElement ? nextElement.offsetWidth : 0;
-            
-            document.addEventListener('mousemove', resize);
-            document.addEventListener('mouseup', stopResize);
-            
-            // Add active class for styling
-            handle.classList.add('active');
-            document.body.style.cursor = 'col-resize';
-        });
-        
-        function resize(e) {
-            const dx = e.clientX - startX;
-            const newWidth = startWidth + dx;
-            const nextElement = element.nextElementSibling;
-            
-            // Ensure minimum width
-            if (newWidth > 100 && (!nextElement || (nextStartWidth - dx) > 100)) {
-                element.style.width = `${newWidth}px`;
-                element.style.flex = 'none';
-                
-                if (nextElement) {
-                    nextElement.style.width = `${nextStartWidth - dx}px`;
-                    nextElement.style.flex = 'none';
-                }
-            }
-        }
-        
-        function stopResize() {
-            document.removeEventListener('mousemove', resize);
-            document.removeEventListener('mouseup', stopResize);
-            handle.classList.remove('active');
-            document.body.style.cursor = '';
-        }
-    }
-    
-    // Function to add horizontal resize handle (between editor and viewer)
-    function addHorizontalResizeHandle(element) {
-        const handle = document.createElement('div');
-        handle.className = 'resize-handle horizontal-resize-handle';
-        handle.innerHTML = `
-            <div class="resize-handle-inner">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </div>
-        `;
-        element.appendChild(handle);
-        
-        let startY, startHeight, viewerStartHeight;
-        
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startY = e.clientY;
-            startHeight = editorsContainer.offsetHeight;
-            viewerStartHeight = viewersContainer.offsetHeight;
-            
-            document.addEventListener('mousemove', resize);
-            document.addEventListener('mouseup', stopResize);
-            
-            // Add active class for styling
-            handle.classList.add('active');
-            document.body.style.cursor = 'row-resize';
-        });
-        
-        function resize(e) {
-            const dy = e.clientY - startY;
-            const newEditorsHeight = startHeight + dy;
-            const newViewersHeight = viewerStartHeight - dy;
-            
-            // Ensure minimum height
-            if (newEditorsHeight > 100 && newViewersHeight > 100) {
-                editorsContainer.style.height = `${newEditorsHeight}px`;
-                editorsContainer.style.flex = 'none';
-                viewersContainer.style.height = `${newViewersHeight}px`;
-                viewersContainer.style.flex = 'none';
-            }
-        }
-        
-        function stopResize() {
-            document.removeEventListener('mousemove', resize);
-            document.removeEventListener('mouseup', stopResize);
-            handle.classList.remove('active');
-            document.body.style.cursor = '';
-        }
-    }
-    
-    // Add selection tooltip functionality
-    addSelectionTooltip();
+    initializeContainerResizers();
 });
 
-// Function to add selection tooltip
-function addSelectionTooltip() {
-    const tooltip = document.createElement('div');
-    tooltip.className = 'selection-tooltip';
-    tooltip.innerHTML = `
-        <button class="tooltip-btn copy-btn" title="Copy">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-        </button>
-        <button class="tooltip-btn analyze-btn" title="Analyze with DeepSeek">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-        </button>
-    `;
-    document.body.appendChild(tooltip);
+function initializeContainerResizers() {
+    // Initialize resizers for the editor columns
+    createContainerResizer('.editor-column:not(:last-child)', 'horizontal');
     
-    // Track which editor is being used
-    let currentEditor = null;
+    // Initialize resizer between editors and viewers
+    createResizer('.editors-container', '.viewers-container', 'vertical');
     
-    // Add event listeners to all code editors
-    const editors = [
-        document.getElementById('htmlEditor'),
-        document.getElementById('cssEditor'),
-        document.getElementById('jsEditor')
-    ];
+    // Initialize resizer between HTML viewer and CSS/JS viewer
+    createContainerResizer('.html-viewer-column', 'horizontal');
+}
+
+/**
+ * Creates a resizer for containers that share a common parent
+ * @param {string} selectorStr - CSS selector for the containers that need resizers
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function createContainerResizer(selectorStr, direction) {
+    const containers = document.querySelectorAll(selectorStr);
     
-    editors.forEach(editor => {
-        editor.addEventListener('mouseup', handleSelection);
-        editor.addEventListener('keyup', handleSelection);
+    containers.forEach(container => {
+        const resizer = document.createElement('div');
+        resizer.className = `resizer ${direction}-resizer`;
         
-        // Track current editor
-        editor.addEventListener('focus', () => {
-            currentEditor = editor;
-        });
+        // Create arrow controls for the resizer
+        const leftArrow = document.createElement('div');
+        leftArrow.className = 'resizer-arrow left-arrow';
+        leftArrow.innerHTML = '◀';
+        
+        const rightArrow = document.createElement('div');
+        rightArrow.className = 'resizer-arrow right-arrow';
+        rightArrow.innerHTML = '▶';
+        
+        resizer.appendChild(leftArrow);
+        resizer.appendChild(rightArrow);
+        
+        // Apply styles to resizer and arrows
+        applyResizerStyles(resizer, direction, container);
+        applyArrowStyles(leftArrow, rightArrow);
+        
+        container.appendChild(resizer);
+        
+        // Set up the resizer event handlers
+        setupResizerEvents(resizer, container, direction);
+        
+        // Set up arrow controls event handlers
+        setupArrowControls(leftArrow, rightArrow, container, direction);
     });
+}
+
+/**
+ * Creates a resizer between two specific containers
+ * @param {string} firstSelector - CSS selector for the first container
+ * @param {string} secondSelector - CSS selector for the second container
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function createResizer(firstSelector, secondSelector, direction) {
+    const firstContainer = document.querySelector(firstSelector);
+    const secondContainer = document.querySelector(secondSelector);
     
+    if (!firstContainer || !secondContainer) return;
+    
+    const resizer = document.createElement('div');
+    resizer.className = `resizer ${direction}-resizer between-containers`;
+    
+    // Create arrow controls for the resizer
+    const upArrow = document.createElement('div');
+    upArrow.className = 'resizer-arrow up-arrow';
+    upArrow.innerHTML = '▲';
+    
+    const downArrow = document.createElement('div');
+    downArrow.className = 'resizer-arrow down-arrow';
+    downArrow.innerHTML = '▼';
+    
+    resizer.appendChild(upArrow);
+    resizer.appendChild(downArrow);
+    
+    // Apply styles to resizer and arrows
+    applyResizerStyles(resizer, direction);
+    applyArrowStyles(upArrow, downArrow);
+    
+    // Position the resizer between the two containers
+    firstContainer.after(resizer);
+    
+    // Set up the resizer event handlers
+    setupBetweenContainersResizerEvents(resizer, firstContainer, secondContainer, direction);
+    
+    // Set up arrow controls event handlers
+    setupBetweenContainersArrowControls(upArrow, downArrow, firstContainer, secondContainer, direction);
+}
 
-
-    function handleSelection(e) {
-        const selection = window.getSelection();
-        const selectedText = selection.toString().trim();
+/**
+ * Apply styles to the resizer element
+ * @param {HTMLElement} resizer - The resizer element
+ * @param {string} direction - 'horizontal' or 'vertical'
+ * @param {HTMLElement} container - The container (optional)
+ */
+function applyResizerStyles(resizer, direction, container) {
+    // Common styles
+    resizer.style.position = 'absolute';
+    resizer.style.zIndex = '100';
+    resizer.style.backgroundColor = 'var(--border-color)';
+    resizer.style.display = 'flex';
+    resizer.style.justifyContent = 'center';
+    resizer.style.alignItems = 'center';
+    
+    if (direction === 'horizontal') {
+        resizer.style.width = '1.6px'; // Reduced to 1/5th of 8px
+        resizer.style.top = '0';
+        resizer.style.bottom = '0';
+        resizer.style.cursor = 'col-resize';
+        resizer.style.flexDirection = 'column';
         
-        if (selectedText) {
-            const tooltip = document.querySelector('.enhanced-selection-tooltip');
-            
-            // Get the selected range
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            
-            // Use the mouse event coordinates if available
-            const mouseX = e.clientX || (rect.left + rect.width / 2);
-            const mouseY = e.clientY || rect.bottom;
-            
-            // Adjust tooltip position
-            tooltip.style.position = 'fixed';
-            tooltip.style.top = `${mouseY + 10}px`;
-            tooltip.style.left = `${mouseX - (tooltip.offsetWidth / 2)}px`;
-            
-            // Ensure tooltip stays within viewport
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const tooltipRect = tooltip.getBoundingClientRect();
-            
-            // Adjust horizontal position if tooltip goes out of bounds
-            if (tooltipRect.right > viewportWidth) {
-                tooltip.style.left = `${viewportWidth - tooltipRect.width - 10}px`;
-            }
-            if (tooltipRect.left < 0) {
-                tooltip.style.left = '10px';
-            }
-            
-            // Adjust vertical position if tooltip goes below viewport
-            if (tooltipRect.bottom > viewportHeight) {
-                tooltip.style.top = `${mouseY - tooltipRect.height - 10}px`;
-            }
-            
-            tooltip.style.display = 'block';
-            
-            // Update data attribute with the selected text
-            tooltip.setAttribute('data-text', selectedText);
+        // Check if this is a viewer column to position in the middle
+        if (container && (container.classList.contains('html-viewer-column') || 
+                          container.classList.contains('css-viewer-column'))) {
+            // Position in the middle (at the right edge of the container)
+            resizer.style.right = '0';
+            resizer.style.transform = 'translateX(50%)';
         } else {
-            const tooltip = document.querySelector('.enhanced-selection-tooltip');
-            tooltip.style.display = 'none';
+            // Default position at the right edge
+            resizer.style.right = '0';
         }
+    } else { // vertical
+        resizer.style.height = '1.6px'; // Reduced to 1/5th of 8px
+        resizer.style.left = '0';
+        resizer.style.right = '0';
+        resizer.style.bottom = '0';
+        resizer.style.cursor = 'row-resize';
+        resizer.style.flexDirection = 'row';
     }
     
-    editors.forEach(editor => {
-        editor.addEventListener('mouseup', (e) => handleSelection(e));
-        editor.addEventListener('keyup', (e) => handleSelection(e));
-    });
-    
+    // Special style for between-containers
+    if (resizer.classList.contains('between-containers')) {
+        if (direction === 'vertical') {
+            resizer.style.position = 'relative';
+            resizer.style.bottom = 'auto';
+            resizer.style.margin = '0';
+        }
+    }
+}
 
-    document.addEventListener('selectionchange', () => {
-        const selection = window.getSelection();
-        const selectedText = selection.toString().trim();
+/**
+ * Apply styles to the arrow controls
+ * @param {HTMLElement} firstArrow - First arrow element
+ * @param {HTMLElement} secondArrow - Second arrow element
+ */
+function applyArrowStyles(firstArrow, secondArrow) {
+    // Common styles for both arrows
+    const arrows = [firstArrow, secondArrow];
+    arrows.forEach(arrow => {
+        arrow.style.width = '3.6px'; // Reduced to 1/5th of 18px
+        arrow.style.height = '3.6px'; // Reduced to 1/5th of 18px
+        arrow.style.display = 'flex';
+        arrow.style.justifyContent = 'center';
+        arrow.style.alignItems = 'center';
+        arrow.style.backgroundColor = 'var(--bg-medium)';
+        arrow.style.borderRadius = '50%';
+        arrow.style.margin = '0.4px'; // Reduced to 1/5th of 2px
+        arrow.style.cursor = 'pointer';
+        arrow.style.fontSize = '2px'; // Reduced to 1/5th of 10px
+        arrow.style.userSelect = 'none';
         
-        if (selectedText) {
-            const tooltip = document.querySelector('.enhanced-selection-tooltip');
-            tooltip.style.display = 'block';
-        }
-    });
-    
-    // Hide tooltip when clicking elsewhere
-    document.addEventListener('mousedown', (e) => {
-        if (!tooltip.contains(e.target)) {
-            tooltip.style.display = 'none';
-        }
-    });
-    
-    // Copy button functionality
-    const copyBtn = tooltip.querySelector('.copy-btn');
-    copyBtn.addEventListener('click', () => {
-        const text = tooltip.getAttribute('data-text');
-        navigator.clipboard.writeText(text).then(() => {
-            // Show success indicator
-            copyBtn.classList.add('success');
-            setTimeout(() => {
-                copyBtn.classList.remove('success');
-                tooltip.style.display = 'none';
-            }, 1000);
-        });
-    });
-    
-    // Analyze button functionality
-    const analyzeBtn = tooltip.querySelector('.analyze-btn');
-    analyzeBtn.addEventListener('click', () => {
-        const text = tooltip.getAttribute('data-text');
-        analyzeTextWithDeepSeek(text, currentEditor);
-        tooltip.style.display = 'none';
+        // Hover effect
+        arrow.onmouseover = function() {
+            this.style.backgroundColor = 'var(--primary-color)';
+        };
+        arrow.onmouseout = function() {
+            this.style.backgroundColor = 'var(--bg-medium)';
+        };
     });
 }
 
-// Function to analyze text with DeepSeek API
-function analyzeTextWithDeepSeek(text, editor) {
-    // Show loading indicator in console output
-    const jsOutput = document.getElementById('jsOutput');
-    const loadingId = showLoadingIndicator(jsOutput);
+/**
+ * Set up the resizer events for containers in the same parent
+ * @param {HTMLElement} resizer - The resizer element
+ * @param {HTMLElement} container - The container to resize
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function setupResizerEvents(resizer, container, direction) {
+    let startPos, startSize, nextSibling;
     
-    // Get user prompt if any
-    const promptInput = document.getElementById('promptInput');
-    const userPrompt = promptInput.value.trim();
-    
-    // Determine the language based on the editor
-    let language = 'text';
-    if (editor) {
-        if (editor.id === 'htmlEditor') language = 'html';
-        else if (editor.id === 'cssEditor') language = 'css';
-        else if (editor.id === 'jsEditor') language = 'javascript';
-    }
-    
-    // Create analysis prompt
-    const prompt = userPrompt 
-        ? `Analyze this ${language} code: "${text}"\n\nUser's specific request: ${userPrompt}`
-        : `Analyze this ${language} code: "${text}"\n\nProvide a brief explanation of what this code does, 
-           suggest improvements, and identify any potential bugs or issues. Be concise but thorough.`;
-    
-    // Call DeepSeek API
-    fetch('https://tejas56789ce1.pythonanywhere.com/analyze-text', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            text: text,
-            prompt: prompt,
-            language: language
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Clear loading indicator
-        clearInterval(loadingId);
+    resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        startPos = direction === 'horizontal' ? e.clientX : e.clientY;
         
-        // Display the analysis result
-        jsOutput.innerHTML = `
-            <div class="analysis-result">
-                <h3>DeepSeek Analysis</h3>
-                <div class="analysis-content">
-                    ${data.analysis || 'Analysis not available'}
-                </div>
-                <div class="analyzed-code">
-                    <strong>Analyzed ${language.toUpperCase()} Code:</strong>
-                    <pre>${text}</pre>
-                </div>
-            </div>
-        `;
+        // Get the initial size and the next sibling
+        nextSibling = container.nextElementSibling;
         
-        // Switch to console tab to show the result
-        const consoleTab = document.querySelector('.tab[data-tab="console"]');
-        if (consoleTab) {
-            consoleTab.click();
+        // Get the flex basis value or compute the size
+        if (direction === 'horizontal') {
+            startSize = container.offsetWidth;
+            const nextSize = nextSibling ? nextSibling.offsetWidth : 0;
+            const parentSize = container.parentElement.offsetWidth;
+            const totalSize = startSize + nextSize;
+            
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+            
+            function resize(e) {
+                const delta = e.clientX - startPos;
+                
+                // Calculate new sizes while maintaining total
+                const newSize = Math.max(50, Math.min(parentSize - 50, startSize + delta));
+                
+                if (nextSibling) {
+                    const newNextSize = totalSize - newSize;
+                    if (newNextSize < 50) return;
+                    
+                    container.style.flex = `0 0 ${newSize}px`;
+                    nextSibling.style.flex = `0 0 ${newNextSize}px`;
+                } else {
+                    container.style.flex = `0 0 ${newSize}px`;
+                }
+            }
+        } else { // vertical
+            // Handle vertical resizing if needed
         }
-    })
-    .catch(error => {
-        // Clear loading indicator
-        clearInterval(loadingId);
         
-        // Show error message
-        jsOutput.innerHTML = `
-            <div class="error-message">
-                <h3>Analysis Failed</h3>
-                <p>Error: ${error.message}</p>
-                <p>Failed to analyze: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"</p>
-            </div>
-        `;
-        
-        // Switch to console tab to show the error
-        const consoleTab = document.querySelector('.tab[data-tab="console"]');
-        if (consoleTab) {
-            consoleTab.click();
+        function stopResize() {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
         }
     });
 }
 
-// Loading indicator function
-function showLoadingIndicator(outputArea) {
-    let dots = 0;
-    outputArea.innerHTML = `<div class="loading-indicator">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Analyzing code</div>
-    </div>`;
+/**
+ * Set up the resizer events between two specific containers
+ * @param {HTMLElement} resizer - The resizer element
+ * @param {HTMLElement} firstContainer - The first container
+ * @param {HTMLElement} secondContainer - The second container
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function setupBetweenContainersResizerEvents(resizer, firstContainer, secondContainer, direction) {
+    let startPos, firstStartHeight, secondStartHeight;
     
-    const loadingText = outputArea.querySelector('.loading-text');
-    
-    // Add CSS for loading animation if not already added
-    if (!document.querySelector('#loading-styles')) {
-        const style = document.createElement('style');
-        style.id = 'loading-styles';
-        style.textContent = `
-            .loading-indicator {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-            }
-            .loading-spinner {
-                width: 40px;
-                height: 40px;
-                border: 4px solid rgba(126, 87, 194, 0.1);
-                border-radius: 50%;
-                border-top-color: var(--primary-color);
-                animation: spin 1s ease-in-out infinite;
-                margin-bottom: 15px;
-            }
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-            .loading-text {
-                font-size: 16px;
-                color: var(--text-light);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    // Animate the dots
-    const loadingInterval = setInterval(() => {
-        dots = (dots + 1) % 4;
-        loadingText.textContent = `Analyzing code${'.'.repeat(dots)}`;
-    }, 300);
-    
-    return loadingInterval;
+    resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        startPos = e.clientY;
+        firstStartHeight = firstContainer.offsetHeight;
+        secondStartHeight = secondContainer.offsetHeight;
+        
+        // Total available height (minus any other elements)
+        const totalHeight = firstStartHeight + secondStartHeight;
+        
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+        
+        function resize(e) {
+            const delta = e.clientY - startPos;
+            
+            // Calculate new heights (enforce minimum height)
+            const newFirstHeight = Math.max(50, Math.min(totalHeight - 50, firstStartHeight + delta));
+            const newSecondHeight = totalHeight - newFirstHeight;
+            
+            // Apply the new heights
+            firstContainer.style.height = `${newFirstHeight}px`;
+            secondContainer.style.height = `${newSecondHeight}px`;
+        }
+        
+        function stopResize() {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', stopResize);
+        }
+    });
 }
 
-// Add CSS styles for resize handles and tooltip
-const resizeStyles = document.createElement('style');
-resizeStyles.textContent = `
-    .resize-handle {
-        position: absolute;
-        z-index: 10;
-    }
+/**
+ * Set up the arrow control events for containers in the same parent
+ * @param {HTMLElement} leftArrow - The left/up arrow element
+ * @param {HTMLElement} rightArrow - The right/down arrow element
+ * @param {HTMLElement} container - The container to resize
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function setupArrowControls(leftArrow, rightArrow, container, direction) {
+    const nextSibling = container.nextElementSibling;
+    if (!nextSibling) return;
     
-    .vertical-resize-handle {
-        top: 0;
-        right: -6px;
-        width: 12px;
-        height: 100%;
-        cursor: col-resize;
-    }
+    // Resize amount per click
+    const resizeStep = 50;
     
-    .horizontal-resize-handle {
-        bottom: -6px;
-        left: 0;
-        width: 100%;
-        height: 12px;
-        cursor: row-resize;
-    }
+    // Left/up arrow decreases container size
+    leftArrow.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        if (direction === 'horizontal') {
+            const currentWidth = container.offsetWidth;
+            const nextWidth = nextSibling.offsetWidth;
+            
+            if (currentWidth <= 50) return;
+            
+            const newWidth = currentWidth - resizeStep;
+            const newNextWidth = nextWidth + resizeStep;
+            
+            container.style.flex = `0 0 ${newWidth}px`;
+            nextSibling.style.flex = `0 0 ${newNextWidth}px`;
+        } else {
+            // Handle vertical resizing if needed
+        }
+    });
     
-    .resize-handle-inner {
-        position: absolute;
-        background-color: var(--border-color);
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .vertical-resize-handle .resize-handle-inner {
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 4px;
-        height: 40px;
-        border-radius: 2px;
-    }
-    
-    .horizontal-resize-handle .resize-handle-inner {
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 4px;
-        border-radius: 2px;
-    }
-    
-    .resize-handle:hover .resize-handle-inner,
-    .resize-handle.active .resize-handle-inner {
-        opacity: 1;
-        background-color: var(--primary-color);
-    }
-    
-    .selection-tooltip {
-        position: fixed;
-        background-color: var(--bg-medium);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 8px;
-        display: none;
-        flex-direction: row;
-        gap: 8px;
-        z-index: 1000;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-    
-    .tooltip-btn {
-        background-color: var(--bg-light);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        padding: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-    
-    .tooltip-btn:hover {
-        background-color: var(--primary-hover);
-    }
-    
-    .tooltip-btn.copy-btn.success {
-        background-color: #4caf50;
-    }
-    
-    .tooltip-btn.analyze-btn {
-        background-color: var(--deepseek-color);
-    }
-    
-    .tooltip-btn.analyze-btn:hover {
-        background-color: var(--deepseek-hover);
-    }
-    
-    .analysis-result {
-        padding: 12px;
-        background-color: rgba(126, 87, 194, 0.1);
-        border-radius: 6px;
-        margin: 10px 0;
-    }
-    
-    .analysis-result h3 {
-        margin: 0 0 10px 0;
-        color: var(--primary-color);
-        font-size: 16px;
-    }
-    
-    .analysis-content {
-        white-space: pre-wrap;
-        line-height: 1.5;
-        margin-bottom: 10px;
-    }
-    
-    .analyzed-code {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid var(--border-color);
-    }
-    
-    .analyzed-code pre {
-        background-color: var(--bg-dark);
-        padding: 10px;
-        border-radius: 4px;
-        margin-top: 5px;
-        max-height: 150px;
-        overflow: auto;
-    }
-    
-    .error-message {
-        padding: 12px;
-        background-color: rgba(255, 82, 82, 0.1);
-        border-radius: 6px;
-        margin: 10px 0;
-    }
-    
-    .error-message h3 {
-        margin: 0 0 10px 0;
-        color: #ff5252;
-        font-size: 16px;
-    }
-`;
+    // Right/down arrow increases container size
+    rightArrow.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        if (direction === 'horizontal') {
+            const currentWidth = container.offsetWidth;
+            const nextWidth = nextSibling.offsetWidth;
+            
+            if (nextWidth <= 50) return;
+            
+            const newWidth = currentWidth + resizeStep;
+            const newNextWidth = nextWidth - resizeStep;
+            
+            container.style.flex = `0 0 ${newWidth}px`;
+            nextSibling.style.flex = `0 0 ${newNextWidth}px`;
+        } else {
+            // Handle vertical resizing if needed
+        }
+    });
+}
 
-document.head.appendChild(resizeStyles);
+/**
+ * Set up the arrow control events between two specific containers
+ * @param {HTMLElement} upArrow - The up arrow element
+ * @param {HTMLElement} downArrow - The down arrow element
+ * @param {HTMLElement} firstContainer - The first container
+ * @param {HTMLElement} secondContainer - The second container
+ * @param {string} direction - 'horizontal' or 'vertical'
+ */
+function setupBetweenContainersArrowControls(upArrow, downArrow, firstContainer, secondContainer, direction) {
+    // Resize amount per click
+    const resizeStep = 50;
+    
+    // Up arrow decreases first container height
+    upArrow.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        const firstHeight = firstContainer.offsetHeight;
+        const secondHeight = secondContainer.offsetHeight;
+        
+        if (firstHeight <= 50) return;
+        
+        const newFirstHeight = firstHeight - resizeStep;
+        const newSecondHeight = secondHeight + resizeStep;
+        
+        firstContainer.style.height = `${newFirstHeight}px`;
+        secondContainer.style.height = `${newSecondHeight}px`;
+    });
+    
+    // Down arrow increases first container height
+    downArrow.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        const firstHeight = firstContainer.offsetHeight;
+        const secondHeight = secondContainer.offsetHeight;
+        
+        if (secondHeight <= 50) return;
+        
+        const newFirstHeight = firstHeight + resizeStep;
+        const newSecondHeight = secondHeight - resizeStep;
+        
+        firstContainer.style.height = `${newFirstHeight}px`;
+        secondContainer.style.height = `${newSecondHeight}px`;
+    });
+}
+
+// CSS injection for the resizers
+(function injectResizerCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Resizer styles */
+        .resizer {
+            transition: background-color 0.2s;
+        }
+        
+        .resizer:hover {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .horizontal-resizer {
+            box-shadow: 0.2px 0 0.6px rgba(0, 0, 0, 0.2); /* Reduced shadow */
+        }
+        
+        .vertical-resizer {
+            box-shadow: 0 0.2px 0.6px rgba(0, 0, 0, 0.2); /* Reduced shadow */
+        }
+        
+        .resizer-arrow {
+            transition: background-color 0.2s, color 0.2s;
+        }
+        
+        .resizer-arrow:hover {
+            color: white;
+        }
+        
+        /* Responsive behavior */
+        @media (max-width: 768px) {
+            .horizontal-resizer {
+                display: none !important;
+            }
+            
+            .vertical-resizer.between-containers {
+                height: 3.2px !important; /* Reduced to 1/5th of 16px */
+            }
+        }
+    `;
+    document.head.appendChild(style);
+})();
