@@ -1,0 +1,9 @@
+# robots.txt for AI Code Editor
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+
+# Sitemap location
+Sitemap: https://imaginea.store/sitemap.xml

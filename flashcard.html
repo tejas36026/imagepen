@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz, FLashcard, games</title>
+    <script src="https://unpkg.com/compromise"></script>
+    <!-- Your Provided CSS (Keep the extensive CSS from the previous answer here) -->
+    <style>
+        /* --- PASTE ALL YOUR PREVIOUS CSS HERE --- */
+         /* Ensure body is a flex container for side-by-side layout */
+        body {
+            height: 100vh !important;
+            display: flex !important;
+            flex-direction: row !important; /* Side by side */
+            flex-wrap: nowrap !important;
+            overflow: hidden !important;
+            background-color: var(--body-background-color) !important;
+            color: var(--text-primary) !important;
+            margin: 0 !important;
+        }
+
+        .header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 50px !important; /* Consistent height */
+            padding: 1px 10px !important; /* Added more padding */
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            background-color: var(--header-bg) !important;
+            backdrop-filter: blur(10px) !important;
+            z-index: 100 !important;
+        }
+
+        /* Offset content below header */
+        body > *:not(.header):not(.modal-overlay):not(#gallery-section):not(.paste-notification):not(.dropzone):not(#animationCanvas):not(.tutorial-highlight-overlay):not(.tutorial-tooltip):not(.tutorial-controls):not(.tutorial-highlight pulse):not(.body > div.tutorial-highlight.pulse) {
+            margin-top: 50px !important;
+        }
+
+        /* Editors and viewers containers */
+        .editors-container, .viewers-container {
+            flex: 1 !important; /* Equal width */
+            height: calc(100vh - 50px) !important; /* Full height minus header */
+            display: flex !important;
+            flex-direction: column !important; /* Stack children vertically */
+            background-color: var(--editor-bg) !important;
+            overflow: auto !important;
+        }
+
+        /* Swap positions: viewers on left, editors on right */
+        .viewers-container {
+            order: 1 !important; /* Appears first (left) */
+            border-right: 1px solid var(--border-color) !important; /* Separator */
+            padding: 15px; /* Add padding for content */
+        }
+
+        .editors-container {
+            order: 2 !important; /* Appears second (right) */
+            padding: 15px; /* Add padding */
+        }
+
+        /* Editor columns stack vertically (If used) */
+        .editor-column {
+            flex: 1 !important;
+            border-right: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        /* Viewer columns stack vertically (If used) */
+        .html-viewer-column, .css-js-viewer-column {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            border-right: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        /* Ensure editors and viewers fill their containers (If used) */
+        .editor, .viewer {
+            flex: 1 !important;
+            overflow: auto !important;
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column !important;
+            }
+
+            .editors-container, .viewers-container {
+                flex: none !important;
+                width: 100% !important;
+                height: calc(50vh - 25px) !important; /* Adjusted height */
+                margin-top: 0 !important; /* Remove margin-top */
+            }
+
+             /* Correct offset for content on small screens */
+            body > .viewers-container {
+                 margin-top: 50px !important;
+            }
+            body > .editors-container {
+                 margin-top: 0 !important; /* No extra margin needed */
+            }
+
+            .viewers-container {
+                order: 1 !important; /* Keep viewers first */
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color) !important;
+            }
+
+            .editors-container {
+                order: 2 !important;
+                border-bottom: none !important;
+                height: calc(50vh - 25px) !important; /* Adjusted height */
+            }
+
+            .editor-column, .html-viewer-column, .css-js-viewer-column {
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color) !important;
+                height: auto !important;
+            }
+        }
+
+        /* --- Start of Provided Styles --- */
+        /* Paste ALL the CSS you provided here */
+        /* ... (rest of your extensive CSS rules) ... */
+
+        @import url("https://use.typekit.net/zei5man.css");
+
+        :root {
+            /* Color variables */
+            --color-primary: #2622f7;
+            --color-primary-01: #4991e5;
+            --color-primary-02: #39bdd6;
+            --color-primary-03: #3bd4cb;
+            --color-primary-04: #BAD7F5;
+            --color-primary-05: #e4ecf4;
+            --color-white: #f6f6f6;
+            --color-black: #000000;
+            --color-dark: #121111;
+            --body-background-color: #10131c;
+            --font-family-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-family-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            /* Editor-specific colors */
+            --html-color: #e44d26;
+            --css-color: #264de4;
+            --js-color: #f7df1e;
+            --text-primary: var(--color-white);
+            --text-secondary: #a7a6a6;
+            --editor-bg: #1c2333;
+            --header-bg: rgba(28, 35, 51, 0.8);
+            --border-color: #253351;
+            --border-color-1: #4991e5;
+            --btn-primary-bg: var(--color-primary-01);
+            --btn-primary-text: #e4ecf4;
+            --btn-hover-bg: var(--color-primary-02);
+
+            /* Animation variables */
+            --transition-fast: 0.15s ease;
+            --transition-medium: 0.3s ease;
+            --transition-slow: 0.5s ease;
+            --bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        }
+        /* Button Group Styles - No HTML changes required */
+        .actions {
+          display: flex;
+          align-items: center;
+          gap: 12px !important; /* Increased gap for header */
+        }
+
+        .actions .btn {
+          border: 1px solid var(--border-color) !important;
+          margin: 0 !important;
+          padding: 8px 12px !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important; /* Added gap for icons/text */
+          background-color: var(--editor-bg) !important;
+          color: var(--text-primary) !important;
+          font-size: 14px !important;
+          border-radius: 6px !important; /* Apply default radius */
+        }
+
+        /* Remove grouping styles if not using button groups */
+        /*
+        .actions .btn:not(:first-child):not(#magicBtn) {
+          border-left: none !important;
+          border-radius: 0 !important;
+        }
+
+        .actions .btn:first-of-type:not(#magicBtn) {
+          border-top-right-radius: 0 !important;
+          border-bottom-right-radius: 0 !important;
+        }
+
+        .actions .btn:last-of-type {
+          border-top-left-radius: 0 !important;
+          border-bottom-left-radius: 0 !important;
+        }
+        */
+
+        .actions .btn:hover {
+          background-color: var(--btn-hover-bg) !important;
+        }
+
+        .actions .btn-primary {
+          background-color: var(--btn-primary-bg);
+          color: var(--btn-primary-text);
+        }
+
+        .actions .btn svg {
+          width: 16px;
+          height: 16px;
+        }
+
+
+        * {
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-primary);
+            font-family: "neue-haas-grotesk-display", var(--font-family-heading);
+            margin-bottom: 0.5em; /* Add spacing */
+        }
+
+        /* Base animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blinkCursor {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--color-primary-01); }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        /* Apply animations to elements */
+        .fade-in {
+            animation: fadeIn var(--transition-slow) forwards;
+        }
+
+        .slide-up {
+            animation: slideUp var(--transition-medium) forwards;
+        }
+
+        .slide-down {
+            animation: slideDown var(--transition-medium) forwards;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .typewriter {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typewriter 4s steps(40) forwards,
+                       blinkCursor 0.75s step-end infinite;
+            border-right: 2px solid;
+        }
+
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple-effect {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        /* Example of applying the neue-haas-grotesk-display to headers */
+        h1, h2, h3, h4, h5, h6,
+        .modal-title,
+        .plan-name,
+        .logo,
+        .language-tag,
+        .viewer-header {
+            font-family: "neue-haas-grotesk-display", var(--font-family-heading);
+            font-weight: 500; /* Medium weight for headings */
+        }
+
+
+        /* Add smooth transitions and hover effects */
+        .header {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-primary); /* Ensure logo text is visible */
+            font-size: 1.2rem; /* Make logo slightly larger */
+        }
+
+        .logo:hover {
+            transform: translateX(3px);
+        }
+
+        .logo svg {
+            transition: transform 0.3s ease, opacity 0.2s ease;
+            fill: var(--color-primary-01); /* Color the logo SVG */
+        }
+
+        .logo:hover svg {
+            transform: scale(1.1) rotate(-8deg);
+        }
+
+        .logo span {
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover span {
+            transform: translateX(4px);
+        }
+
+        /* Button animations (General Button Style) */
+        .btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-color) !important;
+            margin: 0 !important;
+            padding: 8px 12px !important;
+            display: inline-flex !important; /* Use inline-flex */
+            align-items: center !important;
+            gap: 6px !important;
+            background-color: var(--editor-bg) !important;
+            color: var(--text-primary) !important;
+            font-size: 14px !important;
+            border-radius: 6px !important; /* Consistent radius */
+            cursor: pointer; /* Ensure pointer cursor */
+        }
+
+        .btn:hover:not(:disabled) { /* Only apply hover effect if not disabled */
+            transform: translateY(-1px) scale(1.02); /* Subtle lift */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: var(--btn-hover-bg) !important;
+            color: var(--btn-primary-text) !important;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(1px) scale(0.98);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        .btn svg {
+            transition: transform 0.3s ease;
+             width: 16px; /* Ensure icon size */
+             height: 16px;
+        }
+
+        .btn:hover:not(:disabled) svg {
+            transform: rotate(10deg);
+        }
+
+
+        /* Input field animations */
+        .form-input, #searchInput { /* Target search input */
+            transition: all 0.3s ease, box-shadow 0.2s ease;
+            padding: 8px 12px; /* Match button padding */
+            border: 1px solid var(--border-color);
+            border-radius: 6px; /* Match button radius */
+            font-size: 14px;
+            background-color: var(--editor-bg);
+            color: var(--text-primary);
+            min-width: 200px; /* Give it some base width */
+        }
+
+        .form-input:focus, #searchInput:focus {
+            transform: scale(1.01); /* Less aggressive scale */
+            box-shadow: 0 0 0 2px var(--color-primary-01); /* Focus ring */
+            outline: none;
+            border-color: var(--color-primary-01);
+        }
+
+        /* Apply neue-haas-grotesk-text to body text */
+        body,
+        .btn,
+        .form-input,
+        textarea,
+        .code-preview,
+        .tab-buttons,
+        .plan-features,
+        #wiki-content p, /* Target paragraphs specifically */
+        #flashcard-section, /* Apply to interactive elements */
+        #quiz-section {
+            font-family: "neue-haas-grotesk-text", var(--font-family-body);
+            font-weight: 400; /* Regular weight for body text */
+        }
+
+        /* Apply bold weight where needed */
+        .btn-primary,
+        .btn-run,
+        .payment-plan-header,
+        .tab-buttons,
+        .plan-name,
+        .quiz-question strong, /* Bold quiz question */
+        .cloze-blank { /* Style for the blank */
+            font-weight: 700;
+        }
+
+
+        /* Custom Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: var(--editor-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--color-primary-01);
+        }
+
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--editor-bg);
+        }
+
+        /* --- Learning Tool Specific Styles --- */
+
+        #wiki-content {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.03); /* Slightly lighter bg */
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+            max-height: 300px; /* Limit initial height */
+            overflow-y: auto; /* Allow scrolling if content is long */
+        }
+
+        #wiki-content h2 {
+             margin-top: 0;
+             border-bottom: 1px solid var(--border-color);
+             padding-bottom: 5px;
+             margin-bottom: 10px;
+        }
+
+         #wiki-content p:first-of-type {
+            margin-top: 0;
+        }
+         #wiki-content p {
+            margin-bottom: 1em;
+        }
+
+
+        .learning-section {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        /* Flashcard Styles */
+        .flashcard-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #flashcardCounter {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+         .flashcard-navigation .btn {
+            padding: 5px 10px !important; /* Smaller padding for nav buttons */
+            font-size: 13px !important;
+         }
+
+
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%; /* Make container wider */
+            max-width: 450px; /* Limit max width */
+            height: 200px; /* Slightly taller */
+            margin: 0 auto 20px auto; /* Center container */
+            cursor: pointer;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            border: 1px solid var(--border-color-1);
+            border-radius: 8px;
+            background-color: var(--editor-bg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            display: flex;
+            flex-direction: column; /* Stack title and content */
+            justify-content: center;
+            align-items: center;
+            padding: 20px; /* More padding */
+            text-align: center;
+            border-radius: 8px;
+            overflow-y: auto; /* Allow scrolling if content too long */
+        }
+         .flashcard-face span { /* Style for title/label */
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-bottom: 8px; /* More space */
+            display: block;
+            font-weight: 500;
+         }
+         .flashcard-face p { /* Style for main content */
+             font-size: 1em;
+             margin: 0;
+             line-height: 1.5; /* Better line spacing */
+         }
+         .flashcard-face p .cloze-blank { /* Ensure blank styling applies */
+             font-weight: 700;
+             display: inline-block;
+             min-width: 80px;
+             border-bottom: 1px solid var(--color-primary-01);
+             text-align: center;
+             color: var(--color-primary-02);
+             padding: 0 5px;
+             margin: 0 3px;
+         }
+
+
+        .flashcard-front {
+            background-color: var(--editor-bg);
+            color: var(--text-primary);
+        }
+
+        .flashcard-back {
+            background-color: var(--editor-bg);
+            color: var(--text-primary);
+            transform: rotateY(180deg);
+        }
+
+        /* Quiz Styles (Same as before) */
+        .quiz-container {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.03);
+            min-height: 200px; /* Ensure space */
+            position: relative; /* For quiz completion message */
+        }
+
+        .quiz-question {
+            margin-bottom: 15px;
+            font-weight: 500;
+            line-height: 1.5; /* Improve readability */
+        }
+         .cloze-blank { /* Shared style for blanks */
+             display: inline-block;
+             min-width: 80px;
+             border-bottom: 1px solid var(--color-primary-01);
+             text-align: center;
+             color: var(--color-primary-02);
+             padding: 0 5px;
+             margin: 0 3px;
+         }
+
+        .quiz-options label {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color var(--transition-fast), border-color var(--transition-fast);
+        }
+
+        .quiz-options label:hover {
+            background-color: var(--header-bg);
+            border-color: var(--color-primary-01);
+        }
+         .quiz-options label.selected {
+            background-color: rgba(73, 145, 229, 0.1);
+            border-color: var(--color-primary-01);
+         }
+         .quiz-options label.disabled {
+             cursor: default;
+             opacity: 0.7;
+             pointer-events: none;
+         }
+
+
+        .quiz-options input[type="radio"] {
+            margin-right: 10px;
+            accent-color: var(--color-primary-01);
+            display: none; /* Hide radio button, use label styling */
+        }
+
+         /* Style for selected state when radio is hidden */
+         .quiz-options input[type="radio"]:checked + span {
+            font-weight: bold;
+         }
+
+        .quiz-feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .quiz-feedback.correct {
+            background-color: rgba(82, 196, 26, 0.2);
+            border: 1px solid rgba(82, 196, 26, 0.5);
+            color: #a0d911;
+        }
+
+        .quiz-feedback.incorrect {
+            background-color: rgba(255, 77, 79, 0.2);
+            border: 1px solid rgba(255, 77, 79, 0.5);
+            color: #ff7875;
+        }
+        #quizProgress {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            text-align: right;
+        }
+         #quizCompleteMessage {
+             text-align: center;
+             font-weight: bold;
+             color: var(--color-primary-03);
+             padding: 20px;
+         }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+         .loading-indicator {
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             padding: 20px;
+             font-style: italic;
+             color: var(--text-secondary);
+         }
+         .error-message {
+             color: #ff4d4f;
+             padding: 10px;
+             background-color: rgba(255, 77, 79, 0.1);
+             border: 1px solid rgba(255, 77, 79, 0.3);
+             border-radius: 4px;
+             margin-top: 15px;
+         }
+
+         /* Ensure actions elements align in header */
+         .header .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .header .search-container {
+             display: flex;
+             gap: 5px;
+             align-items: center;
+         }
+
+        /* --- End of Provided Styles --- */
+
+    </style>
+</head>
+<body>
+
+    <!-- Header Bar (Same as before) -->
+    <div class="header">
+         <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> <!-- Simple info icon -->
+            <span>imagine a search</span>
+        </div>
+        <div class="actions">
+             <div class="search-container">
+                <input type="search" id="searchInput" class="form-input" placeholder="Search Wikipedia...">
+                <button id="searchButton" class="btn btn-primary">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                         <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                     </svg>
+                     Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id ="wikimodal">
+
+    <!-- Viewers Container (Main Content Area) -->
+    <div class="viewers-container">
+        <div id="loadingIndicator" class="loading-indicator hidden">
+            <span>Loading... ✨</span>
+        </div>
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <div id="mainContent" class="hidden">
+            <!-- Wikipedia Content Display (Same as before) -->
+            <div id="wiki-content">
+                <h2></h2>
+                <p></p>
+            </div>
+            <button id="readAloudButton" class="btn" style="margin-bottom: 20px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.5 8.5a.5.5 0 0 0 0-1H12c-.6 0-1.4-.3-2.1-.8l-.6-.4c-.5-.3-1-.5-1.5-.5H6.5c-.7 0-1.4.2-2.1.7l-.6.5c-.6.4-1.3.7-1.9.7H1.5a.5.5 0 0 0 0 1h.4c.6 0 1.4.3 2.1.8l.6.4c.5.3 1 .5 1.5.5h1.9c.5 0 1-.2 1.5-.5l.6-.4c.7-.5 1.5-.8 2.1-.8h1.6zm-11-4a.5.5 0 0 0 0 1h.4c.6 0 1.4.3 2.1.8l.6.4c.5.3 1 .5 1.5.5h1.9c.5 0 1-.2 1.5-.5l.6-.4c.7-.5 1.5-.8 2.1-.8h1.6a.5.5 0 0 0 0-1h-.4c-.6 0-1.4-.3-2.1-.8l-.6-.4c-.5-.3-1-.5-1.5-.5H6.5c-.7 0-1.4.2-2.1.7l-.6.5c-.6.4-1.3.7-1.9.7H2.5z"/>
+                </svg>
+                Read Aloud
+            </button>
+
+            <!-- Flashcard Section -->
+            <div id="flashcard-section" class="learning-section hidden">
+                <h3>Flashcards</h3>
+                 <div class="flashcard-navigation">
+                    <button id="prevFlashcard" class="btn">← Previous</button>
+                    <span id="flashcardCounter">Card 1 of N</span>
+                    <button id="nextFlashcard" class="btn">Next →</button>
+                 </div>
+                <div id="flashcardContainer" class="flashcard-container">
+                    <div class="flashcard" id="flashcard">
+                        <div class="flashcard-face flashcard-front">
+                            <span>Sentence with Blank (Click to Flip)</span>
+                            <p id="flashcardFrontContent"></p>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                             <span>Original Sentence</span>
+                            <p id="flashcardBackContent"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Quiz Section (Same as before) -->
+            <div id="quiz-section" class="learning-section hidden">
+                 <h3>Quiz Time!</h3>
+                 <div class="quiz-container">
+                    <div id="quizProgress">Question 1 of N</div>
+                    <div id="quizQuestion" class="quiz-question">Loading question...</div>
+                    <div id="quizOptions" class="quiz-options">
+                        <!-- Options will be populated by JS -->
+                    </div>
+                    <div id="quizFeedback" class="quiz-feedback hidden"></div>
+                    <div id="quizCompleteMessage" class="hidden">Quiz Complete! 🎉</div>
+
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                         <button id="submitQuiz" class="btn btn-primary">Submit Answer</button>
+                         <button id="nextQuizButton" class="btn hidden">Next Question →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Editors Container (Same as before) -->
+    <div class="editors-container">
+        <h4>Notes / Extra Space</h4>
+        <p style="color: var(--text-secondary);">This area is defined by the layout CSS but not actively used by the Wikipedia tool in this example.</p>
+         <textarea placeholder="Your notes..." style="width: 100%; height: 200px; background-color: var(--editor-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; font-family: var(--font-family-body); margin-top:10px;"></textarea>
+    </div>
+
+
+        
+</div>
+    <script>
+        // Ensure the nlp object is available globally from the CDN script
+        /* global nlp */
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Get DOM Elements (Same as before) ---
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const wikiContentDiv = document.getElementById('wiki-content');
+            const readAloudButton = document.getElementById('readAloudButton');
+            const mainContentDiv = document.getElementById('mainContent');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessageDiv = document.getElementById('errorMessage');
+            const flashcardSection = document.getElementById('flashcard-section');
+            const flashcardContainer = document.getElementById('flashcardContainer');
+            const flashcard = document.getElementById('flashcard');
+            const flashcardFrontContent = document.getElementById('flashcardFrontContent');
+            const flashcardBackContent = document.getElementById('flashcardBackContent');
+            const prevFlashcardButton = document.getElementById('prevFlashcard');
+            const nextFlashcardButton = document.getElementById('nextFlashcard');
+            const flashcardCounter = document.getElementById('flashcardCounter');
+            const quizSection = document.getElementById('quiz-section');
+            const quizProgress = document.getElementById('quizProgress');
+            const quizQuestion = document.getElementById('quizQuestion');
+            const quizOptions = document.getElementById('quizOptions');
+            const submitQuizButton = document.getElementById('submitQuiz');
+            const quizFeedback = document.getElementById('quizFeedback');
+            const nextQuizButton = document.getElementById('nextQuizButton');
+            const quizCompleteMessage = document.getElementById('quizCompleteMessage');
+    
+            // --- State Variables (Same as before) ---
+            let currentWikiText = '';
+            let currentWikiTitle = '';
+            let flashcardData = [];
+            let currentFlashcardIndex = 0;
+            let quizData = [];
+            let currentQuizIndex = 0;
+            // Stop words are less critical now NLP handles parts of speech, but can still help clean up
+            const stopWords = new Set(['a','an','the','is','are','was','were','of','at','by','for','with','about','to','from','in','out','on','and','or','what','which','who','when','where','why','how','tell','me','show','define','information', 'meaning', 'search', 'find', 'lookup']);
+            const MAX_RETRIES = 3;
+    
+
+
+            
+                    // --- NLP Keyword Extraction using Compromise.js (Corrected Noun Phrase Extraction) ---
+        function extractNlpKeywords(text) {
+            if (typeof nlp === 'undefined') {
+                console.error("Compromise.js (nlp) not loaded!");
+                showError("NLP library failed to load. Cannot analyze search query effectively.");
+                return [];
+            }
+            if (!text) return [];
+
+            try {
+                let doc = nlp(text);
+                let potentialKeywords = new Set(); // Use a Set to handle duplicates easily
+
+                // --- Method 1: Extract Chunks tagged as Noun Phrases ---
+                // This often gets multi-word terms like "Eiffel Tower"
+                doc.chunks().forEach(chunk => {
+                    if (chunk.has('#NounPhrase')) {
+                        potentialKeywords.add(chunk.text('reduced')); // 'reduced' often cleans up whitespace/punctuation
+                    }
+                });
+
+                 // --- Method 2: Extract Individual Proper Nouns ---
+                 // Ensures single proper nouns are included even if not part of a larger detected phrase
+                 doc.nouns().match('#ProperNoun').forEach(properNoun => {
+                     potentialKeywords.add(properNoun.text('reduced'));
+                 });
+
+                // --- Method 3: Extract Individual Common Nouns (Lower Priority) ---
+                // Fallback for other important nouns
+                doc.nouns().filter(n => !n.has('#ProperNoun')).forEach(commonNoun => {
+                    potentialKeywords.add(commonNoun.text('reduced'));
+                });
+
+                // --- Normalize, Filter, and Rank ---
+                let finalKeywords = Array.from(potentialKeywords)
+                    .map(phrase => { // Normalize: Remove leading articles
+                        let lowerPhrase = phrase.toLowerCase().trim();
+                        if (lowerPhrase.startsWith('a ')) return phrase.substring(2).trim();
+                        if (lowerPhrase.startsWith('an ')) return phrase.substring(3).trim();
+                        if (lowerPhrase.startsWith('the ')) return phrase.substring(4).trim();
+                        return phrase.trim();
+                    })
+                    .filter(word => { // Filter stop words, short words, numbers
+                        const lowerWord = word.toLowerCase();
+                        return word.length > 2 &&
+                               !stopWords.has(lowerWord) &&
+                               !/^\d+$/.test(word);
+                    });
+
+                // --- Sorting ---
+                 // Get original proper nouns list again for sorting reference
+                 const originalProperNounsLower = doc.nouns().match('#ProperNoun').out('array').map(pn => pn.toLowerCase());
+
+                finalKeywords.sort((a, b) => {
+                    let scoreA = 0;
+                    let scoreB = 0;
+                    let lowerA = a.toLowerCase();
+                    let lowerB = b.toLowerCase();
+
+                     // Strong priority for original proper nouns
+                    if (originalProperNounsLower.includes(lowerA)) scoreA += 100;
+                    if (originalProperNounsLower.includes(lowerB)) scoreB += 100;
+
+                    // Longer terms boost
+                    scoreA += a.length;
+                    scoreB += b.length;
+
+                    // Penalize multi-word terms slightly (less reliable titles)
+                    if (a.includes(' ')) scoreA -= 10;
+                    if (b.includes(' ')) scoreB -= 10;
+
+                    return scoreB - scoreA; // Descending score
+                });
+
+                // Remove duplicates again *after* normalization (e.g., "a solar system" and "solar system" might both exist initially)
+                 finalKeywords = [...new Set(finalKeywords)];
+
+                console.log("NLP Extracted Keywords (Chunking & Ranked):", finalKeywords);
+                return finalKeywords;
+
+            } catch (error) {
+                console.error("Error during NLP keyword extraction:", error);
+                showError("Could not analyze search query using NLP.");
+                return [];
+            }
+        }
+
+            // --- Wikipedia Fetch Function (Modified for NLP Retries) ---
+            async function fetchWikipediaData(searchTerm, originalQuery = null, nlpKeywords = null, attemptIndex = 0, attemptedWords = null) {
+                // Initialize on the first call
+                if (originalQuery === null) originalQuery = searchTerm;
+                if (attemptedWords === null) attemptedWords = new Set();
+    
+                // Prevent retrying the same word within a single search sequence
+                const currentSearchLower = searchTerm.toLowerCase();
+                if (attemptedWords.has(currentSearchLower)) {
+                     console.warn(`Skipping already attempted word: "${searchTerm}"`);
+                     const nextKeyword = nlpKeywords ? nlpKeywords.find(kw => !attemptedWords.has(kw.toLowerCase())) : null;
+                     if (nextKeyword && attemptIndex < MAX_RETRIES) {
+                         console.log(`Moving to next NLP keyword: "${nextKeyword}"`);
+                         // Note: We don't add to attemptedWords here, it's added at the start of the *next* recursive call
+                         return await fetchWikipediaData(nextKeyword, originalQuery, nlpKeywords, attemptIndex + 1, attemptedWords);
+                     } else {
+                          console.error("Exhausted NLP keywords or retries for:", originalQuery);
+                          showError(`Could not find relevant content for "${originalQuery}". Please try a more specific search term.`);
+                          // ... (rest of final failure UI update)
+                          mainContentDiv.classList.remove('hidden');
+                          wikiContentDiv.innerHTML = '';
+                          flashcardSection.classList.add('hidden');
+                          quizSection.classList.add('hidden');
+                          loadingIndicator.classList.add('hidden');
+                          return false;
+                     }
+                }
+    
+                 attemptedWords.add(currentSearchLower); // Mark current search as attempted
+    
+                updateLoadingMessage(`Searching for "${searchTerm}"...`);
+                hideError();
+    
+                const endpoint = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&explaintext=true&redirects=1&origin=*&titles=${encodeURIComponent(searchTerm)}`;
+    
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    const pages = data.query.pages;
+                    const pageId = Object.keys(pages)[0];
+    
+                    // SUCCESS Case
+                    if (pageId !== "-1" && pages[pageId].extract) {
+                        const page = pages[pageId];
+                        currentWikiTitle = page.title;
+                        currentWikiText = page.extract;
+                        wikiContentDiv.innerHTML = `<h2>${currentWikiTitle}</h2><p>${currentWikiText.replace(/\n+/g, '</p><p>')}</p>`;
+                        generateFlashcards(currentWikiText);
+                        generateQuizzes(currentWikiText);
+                        displayFlashcard();
+                        displayQuizQuestion();
+                        mainContentDiv.classList.remove('hidden');
+                        loadingIndicator.classList.add('hidden');
+                        return true; // Success
+                    } else {
+                        throw new Error(`Page not found or no content for "${searchTerm}".`);
+                    }
+    
+                } catch (error) {
+                    console.warn(`Attempt failed for "${searchTerm}":`, error.message);
+    
+                    // --- Retry Logic ---
+                     // Generate NLP keywords only ONCE on the *first* failure of the original query
+                    if (attemptIndex === 0) {
+                         nlpKeywords = extractNlpKeywords(originalQuery); // Use the NLP function
+                         if (!nlpKeywords || nlpKeywords.length === 0) {
+                             console.error("NLP failed to extract keywords for:", originalQuery);
+                             // Fallback to final failure if NLP gives nothing
+                              showError(`Could not understand the query "${originalQuery}" well enough to find keywords. Please try rephrasing.`);
+                              mainContentDiv.classList.remove('hidden'); wikiContentDiv.innerHTML = ''; flashcardSection.classList.add('hidden'); quizSection.classList.add('hidden'); loadingIndicator.classList.add('hidden');
+                              return false;
+                         }
+                         console.log("Generated NLP keywords for retry:", nlpKeywords);
+                     }
+    
+                    // Find the *next* untried word from the NLP list
+                    const nextKeyword = nlpKeywords ? nlpKeywords.find(kw => !attemptedWords.has(kw.toLowerCase())) : null;
+    
+                    if (nextKeyword && attemptIndex < MAX_RETRIES) {
+                        console.log(`Retrying with NLP keyword (${attemptIndex + 1}/${MAX_RETRIES}): "${nextKeyword}"`);
+                        updateLoadingMessage(`Could not find "${searchTerm}". Trying search for "${nextKeyword}"...`);
+                        // Recursive call, passing the *same* nlpKeywords list
+                        const success = await fetchWikipediaData(nextKeyword, originalQuery, nlpKeywords, attemptIndex + 1, attemptedWords);
+                        if (success) return true; // Stop if retry succeeds
+                    }
+    
+                    // --- Final Failure Case ---
+                     if (!nextKeyword || attemptIndex >= MAX_RETRIES) {
+                         console.error("All fetch attempts failed for:", originalQuery);
+                         let attemptedStr = Array.from(attemptedWords);
+                         if(attemptedStr.length > 1) attemptedStr = ` (tried: ${attemptedStr.filter(w => w !== originalQuery.toLowerCase()).join(', ')})`; // Show only retry keywords
+                         else attemptedStr = '';
+                         showError(`Could not find relevant content for "${originalQuery}"${attemptedStr}. Please try a different or more specific search term.`);
+                         mainContentDiv.classList.remove('hidden'); wikiContentDiv.innerHTML = ''; flashcardSection.classList.add('hidden'); quizSection.classList.add('hidden'); loadingIndicator.classList.add('hidden');
+                         return false;
+                     }
+                     return false; // Return false if this attempt failed but more retries are possible
+                }
+            }
+    
+    
+            // --- Reset UI State (Same as before) ---
+            function resetUI() {
+                hideError(); mainContentDiv.classList.add('hidden'); wikiContentDiv.innerHTML = ''; flashcardSection.classList.add('hidden'); flashcardData = []; currentFlashcardIndex = 0; if (flashcard) flashcard.classList.remove('flipped'); quizSection.classList.add('hidden'); quizData = []; currentQuizIndex = 0; if (quizCompleteMessage) quizCompleteMessage.classList.add('hidden'); if (nextQuizButton) nextQuizButton.classList.add('hidden'); if (submitQuizButton) { submitQuizButton.classList.remove('hidden'); submitQuizButton.disabled = false; } if (quizFeedback) { quizFeedback.classList.add('hidden'); quizFeedback.textContent = ''; } if (typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking) speechSynthesis.cancel();
+            }
+    
+            // --- Generate Multiple Flashcards (Same as before - using simple cloze) ---
+            // NLP could be used here too, but cloze is simpler for now
+            function generateFlashcards(text) {
+                flashcardData = []; if (!text) return; const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+                const localStopWords = new Set(['is', 'are', 'was', 'were', 'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'it', 'its']); // Smaller set for cloze blanks
+                sentences.forEach(originalSentence => {
+                    const words = originalSentence.trim().split(/\s+/); if (words.length < 6 || words.length > 30) return; let possibleBlanks = [];
+                    words.forEach((word, index) => { const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); if (cleanWord.length > 3 && !localStopWords.has(cleanWord) && isNaN(cleanWord)) { if (Math.random() < 0.35) possibleBlanks.push({ word: word, index: index }); } }); // Increased chance slightly
+                    if (possibleBlanks.length > 0) { const blankTarget = possibleBlanks[Math.floor(Math.random() * possibleBlanks.length)]; const frontText = words.map((w, i) => i === blankTarget.index ? `<span class="cloze-blank">_________</span>` : w).join(' '); flashcardData.push({ front: frontText, back: originalSentence.trim() }); }
+                }); console.log(`Generated ${flashcardData.length} flashcards.`);
+            }
+    
+            // --- Display Current Flashcard (Same as before) ---
+             function displayFlashcard() {
+                if (!flashcardSection) return; if (flashcardData.length === 0) { flashcardSection.classList.add('hidden'); return; } flashcardSection.classList.remove('hidden'); if (!flashcardFrontContent || !flashcardBackContent || !flashcard || !flashcardCounter || !prevFlashcardButton || !nextFlashcardButton) return;
+                const card = flashcardData[currentFlashcardIndex]; flashcardFrontContent.innerHTML = card.front; flashcardBackContent.textContent = card.back; flashcard.classList.remove('flipped'); flashcardCounter.textContent = `Card ${currentFlashcardIndex + 1} of ${flashcardData.length}`; prevFlashcardButton.disabled = (currentFlashcardIndex === 0); nextFlashcardButton.disabled = (currentFlashcardIndex === flashcardData.length - 1);
+            }
+    
+            // --- Generate Multiple Quizzes (Same as before - using simple cloze) ---
+            // NLP could also enhance this, e.g., generating WH questions, but keeping cloze for now
+            function generateQuizzes(text) {
+                quizData = []; if (!text) return; const sentences = text.match(/[^.!?]+[.!?]+/g) || []; const potentialDistractors = []; sentences.forEach(sentence => { const words = sentence.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/); words.forEach(word => { if (word.length > 3 && !stopWords.has(word)) potentialDistractors.push(word); }); });
+                sentences.forEach(sentence => { const words = sentence.trim().split(/\s+/); if (words.length < 5 || words.length > 25) return; let possibleBlanks = []; words.forEach((word, index) => { const cleanWord = word.replace(/[^a-zA-Z0-9]/g, ''); if (cleanWord.length > 4 && !stopWords.has(cleanWord.toLowerCase()) && isNaN(cleanWord)) { if (Math.random() < 0.4) possibleBlanks.push({ word: word, index: index }); } });
+                    if (possibleBlanks.length > 0) { const blankTarget = possibleBlanks[Math.floor(Math.random() * possibleBlanks.length)]; const correctAnswer = blankTarget.word.replace(/[^a-zA-Z0-9]/g, ''); let questionText = words.map((w, i) => i === blankTarget.index ? `<span class="cloze-blank">_________</span>` : w).join(' '); let options = new Set([correctAnswer]); let attempts = 0; while (options.size < 4 && attempts < 50 && potentialDistractors.length > 0) { const distractorIndex = Math.floor(Math.random() * potentialDistractors.length); const distractor = potentialDistractors[distractorIndex]; if (distractor !== correctAnswer.toLowerCase()) options.add(distractor); attempts++; } if (options.size >= 2) quizData.push({ questionText: `Fill in the blank: ${questionText}`, options: shuffleArray(Array.from(options)), correctAnswer: correctAnswer }); }
+                }); console.log(`Generated ${quizData.length} quiz questions.`);
+            }
+    
+            // --- Display Current Quiz Question (Same as before) ---
+            function displayQuizQuestion() {
+                if (!quizSection) return; if (quizData.length === 0 || currentQuizIndex >= quizData.length) { quizSection.classList.add('hidden'); if(quizData.length > 0 && quizCompleteMessage) { quizCompleteMessage.classList.remove('hidden'); } if(quizQuestion) quizQuestion.textContent = ''; if(quizOptions) quizOptions.innerHTML = ''; if(submitQuizButton) submitQuizButton.classList.add('hidden'); if(nextQuizButton) nextQuizButton.classList.add('hidden'); if(quizProgress) quizProgress.classList.add('hidden'); return; }
+                quizSection.classList.remove('hidden'); if(quizCompleteMessage) quizCompleteMessage.classList.add('hidden'); if(submitQuizButton) { submitQuizButton.disabled = false; submitQuizButton.classList.remove('hidden'); } if(nextQuizButton) nextQuizButton.classList.add('hidden'); if(quizFeedback) quizFeedback.classList.add('hidden'); if (!quizQuestion || !quizOptions || !quizProgress) return;
+                const currentQuestion = quizData[currentQuizIndex]; quizProgress.textContent = `Question ${currentQuizIndex + 1} of ${quizData.length}`; quizProgress.classList.remove('hidden'); quizQuestion.innerHTML = currentQuestion.questionText; quizOptions.innerHTML = '';
+                currentQuestion.options.forEach((option, index) => { const label = document.createElement('label'); const input = document.createElement('input'); input.type = 'radio'; input.name = 'quizOption'; input.value = option; input.id = `option${index}`; const span = document.createElement('span'); span.textContent = option; label.appendChild(input); label.appendChild(span); label.setAttribute('for', `option${index}`); label.addEventListener('click', () => { document.querySelectorAll('#quizOptions label').forEach(lbl => lbl.classList.remove('selected')); label.classList.add('selected'); }); quizOptions.appendChild(label); });
+            }
+    
+            // --- Check Quiz Answer (Same as before) ---
+             function checkQuizAnswer() {
+                const selectedOptionInput = document.querySelector('input[name="quizOption"]:checked'); if (!quizFeedback || !submitQuizButton || !nextQuizButton) return; quizFeedback.classList.remove('hidden'); quizFeedback.classList.remove('correct', 'incorrect');
+                if (!selectedOptionInput) { quizFeedback.textContent = 'Please select an answer.'; quizFeedback.classList.add('incorrect'); return; }
+                const userAnswer = selectedOptionInput.value; const correctAnswer = quizData[currentQuizIndex].correctAnswer; document.querySelectorAll('#quizOptions input[type="radio"]').forEach(input => input.disabled = true); document.querySelectorAll('#quizOptions label').forEach(label => label.classList.add('disabled'));
+                if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) { quizFeedback.textContent = 'Correct! 👍'; quizFeedback.classList.add('correct'); if(selectedOptionInput.parentElement) selectedOptionInput.parentElement.style.borderColor = '#52c41a'; }
+                else { quizFeedback.textContent = `Incorrect. The correct answer was: ${correctAnswer}`; quizFeedback.classList.add('incorrect'); if(selectedOptionInput.parentElement) selectedOptionInput.parentElement.style.borderColor = '#ff4d4f'; const correctInput = document.querySelector(`input[name="quizOption"][value="${correctAnswer}"]`); if(correctInput && correctInput.parentElement) { correctInput.parentElement.style.borderColor = '#52c41a'; correctInput.parentElement.style.borderWidth = '2px'; } }
+                submitQuizButton.disabled = true; if (currentQuizIndex < quizData.length - 1) { nextQuizButton.classList.remove('hidden'); } else { nextQuizButton.classList.add('hidden'); if (quizCompleteMessage) quizCompleteMessage.classList.remove('hidden'); }
+            }
+    
+            // --- Text-to-Speech (Same as before) ---
+            function readAloud() {
+                if (typeof speechSynthesis === 'undefined') { showError("Sorry, your browser doesn't support text-to-speech."); return; } if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; } const textToRead = currentWikiText || (wikiContentDiv ? wikiContentDiv.textContent : ''); if (!textToRead.trim()) { showError("Nothing to read yet."); return; } const utterance = new SpeechSynthesisUtterance(textToRead); utterance.onerror = (event) => { console.error('Speech synthesis error:', event.error); showError("Sorry, text-to-speech is not available or failed."); }; speechSynthesis.speak(utterance);
+            }
+    
+            // --- Utility Functions (Same as before) ---
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+            function updateLoadingMessage(message) { if (!loadingIndicator) return; loadingIndicator.classList.remove('hidden'); const span = loadingIndicator.querySelector('span'); if(span) span.textContent = message; }
+            function showError(message) { if (!errorMessageDiv) return; errorMessageDiv.textContent = message; errorMessageDiv.classList.remove('hidden'); }
+            function hideError() { if (!errorMessageDiv) return; errorMessageDiv.classList.add('hidden'); errorMessageDiv.textContent = ''; }
+    
+            // --- Event Listeners (Same as before) ---
+            searchButton.addEventListener('click', () => {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    resetUI();
+                    fetchWikipediaData(searchTerm); // Initial call triggers the sequence
+                } else {
+                    showError("Please enter a search term.");
+                }
+            });
+            searchInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') searchButton.click(); });
+            if(readAloudButton) readAloudButton.addEventListener('click', readAloud);
+            if(flashcardContainer) flashcardContainer.addEventListener('click', () => { if(flashcardData.length > 0 && flashcard) flashcard.classList.toggle('flipped'); });
+            if(prevFlashcardButton) prevFlashcardButton.addEventListener('click', () => { if (currentFlashcardIndex > 0) { currentFlashcardIndex--; displayFlashcard(); } });
+            if(nextFlashcardButton) nextFlashcardButton.addEventListener('click', () => { if (currentFlashcardIndex < flashcardData.length - 1) { currentFlashcardIndex++; displayFlashcard(); } });
+            if(submitQuizButton) submitQuizButton.addEventListener('click', checkQuizAnswer);
+            if(nextQuizButton) nextQuizButton.addEventListener('click', () => { currentQuizIndex++; displayQuizQuestion(); });
+    
+        });
+    </script>
+
+</body>
+</html>

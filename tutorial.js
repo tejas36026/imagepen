@@ -5,7 +5,7 @@ let tutorialActive = false;
 let currentTutorialStep = 0;
 let tutorialSteps = [];
 let highlightedElement = null;
-let tutorialOverlay = null;
+let highlightOverlay = null; // Renamed for clarity
 let tutorialTooltip = null;
 let tutorialControls = null;
 let videoElement = null;
@@ -15,31 +15,31 @@ let videoModal = null;
 document.addEventListener('DOMContentLoaded', function() {
     // Create tutorial UI elements
     createTutorialUI();
-    
+
     // Create video modal
     createVideoModal();
-    
-    // Add tutorial button to the header
+
+    // Add tutorial button to the hamburger menu
     addTutorialButton();
-    
-    // Setup mouse event handlers
-    setupMouseInteractivity();
+
+    // Setup mouse event handlers (can be simplified if interactive steps are reduced)
+    // setupMouseInteractivity(); // Consider if complex interactivity is needed now
 });
 
 function createTutorialUI() {
-    // Create overlay element for highlighting
-    tutorialOverlay = document.createElement('div');
-    tutorialOverlay.className = 'tutorial-overlay';
-    tutorialOverlay.style.display = 'none';
-    document.body.appendChild(tutorialOverlay);
-    
-    // Create tooltip element
+    // Create overlay element for highlighting effect (covers everything except highlight)
+    highlightOverlay = document.createElement('div');
+    highlightOverlay.className = 'tutorial-highlight-overlay'; // Use a distinct class
+    highlightOverlay.style.display = 'none';
+    document.body.appendChild(highlightOverlay);
+
+    // Tooltip element remains the same
     tutorialTooltip = document.createElement('div');
     tutorialTooltip.className = 'tutorial-tooltip';
     tutorialTooltip.style.display = 'none';
     document.body.appendChild(tutorialTooltip);
-    
-    // Create controls for navigation
+
+    // Controls element remains the same
     tutorialControls = document.createElement('div');
     tutorialControls.className = 'tutorial-controls';
     tutorialControls.innerHTML = `
@@ -69,124 +69,49 @@ function createTutorialUI() {
     `;
     tutorialControls.style.display = 'none';
     document.body.appendChild(tutorialControls);
-    
+
     // Add CSS for tutorial components
     const style = document.createElement('style');
     style.textContent = `
-        .tutorial-overlay {
+        /* Style for the overlay that dims the background */
+        .tutorial-highlight-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7); /* Dimming effect */
             z-index: 1000;
-            pointer-events: none;
+            pointer-events: none; /* Allows clicks to pass through initially */
         }
-        
 
-        /* JavaScript Editor Width */
-.editor-column:nth-child(3) {
-    flex: 1 0 35%; /* Minimum 35% width for JS editor */
-    min-width: 400px;
-}
-
-/* Image Upload Container Height */
-.image-upload-container {
-    min-height: 150px;
-    height: 25vh;
-}
-
-/* Preview Container Height */
-.html-viewer-column {
-    min-height: 300px;
-    min-height: 50vh;
-}
-
-/* Full Screen Mode Adjustments */
-body.fullscreen-mode .html-viewer {
-    height: 100vh !important;
-}
-
-/* Console Output Container */
-.js-viewer {
-    min-height: 200px;
-    height: 30vh;
-    min-width: 300px;
-}
-
-/* Additional Settings Width */
-.hamburger-dropdown {
-    width: 350px !important;
-    min-width: 300px;
-}
-
-/* Tutorial Containers */
-.tutorial-tooltip {
-    min-width: 320px;
-    min-height: 120px;
-}
-
-.tutorial-controls {
-    min-width: 500px;
-}
-
-/* Record Animation Container */
-#processedImagesContainer {
-    min-height: 180px;
-    height: 25vh;
-}
-
-/* JS Libraries Dropdown */
-.dropdown-menu {
-    width: 400px;
-    min-height: 300px;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 1200px) {
-    .editor-column:nth-child(3) {
-        min-width: 300px;
-    }
-    
-    .tutorial-controls {
-        min-width: 300px;
-        flex-wrap: wrap;
-    }
-}
-
-@media (max-width: 768px) {
-    .editor-column {
-        min-width: 100% !important;
-        height: 40vh;
-    }
-    
-    .viewers-container {
-        height: 60vh;
-    }
-}
-
+        /* Style for the highlighted area (cutout effect) */
         .tutorial-highlight {
             position: absolute;
-            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); /* Creates the cutout */
             border-radius: 4px;
-            z-index: 1001;
-            pointer-events: none;
+            z-index: 1001; /* Above the overlay */
+            pointer-events: auto; /* Allow interaction if needed */
             transition: all 0.3s ease-in-out;
+            /* border: 2px solid #7e57c2; Optional: add a border */
         }
-        
-        .tutorial-tooltip {
+
+        /* --- Tooltip, Controls, Video Modal CSS (Keep existing styles, ensure they work) --- */
+         .tutorial-tooltip {
             position: absolute;
             background: #2a2a2a;
             color: #fff;
             padding: 15px;
             border-radius: 6px;
-            max-width: 300px;
+            max-width: 300px; /* Adjusted from original min-width */
+            min-width: 250px; /* Added minimum */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             z-index: 1002;
             transition: all 0.3s ease-in-out;
+            animation: tooltipEntry 0.3s ease-out;
+            font-size: 14px; /* Base font size */
         }
-        
+
         .tutorial-tooltip:after {
             content: '';
             position: absolute;
@@ -194,48 +119,52 @@ body.fullscreen-mode .html-viewer {
             height: 0;
             border: 8px solid transparent;
         }
-        
+
         .tutorial-tooltip.top:after {
             border-top-color: #2a2a2a;
-            top: 100%;
-            left: 50%;
-            margin-left: -8px;
+            top: 100%; left: 50%; margin-left: -8px;
         }
-        
         .tutorial-tooltip.bottom:after {
             border-bottom-color: #2a2a2a;
-            bottom: 100%;
-            left: 50%;
-            margin-left: -8px;
+            bottom: 100%; left: 50%; margin-left: -8px;
         }
-        
         .tutorial-tooltip.left:after {
             border-left-color: #2a2a2a;
-            left: 100%;
-            top: 50%;
-            margin-top: -8px;
+            left: 100%; top: 50%; margin-top: -8px;
         }
-        
         .tutorial-tooltip.right:after {
             border-right-color: #2a2a2a;
-            right: 100%;
-            top: 50%;
-            margin-top: -8px;
+            right: 100%; top: 50%; margin-top: -8px;
         }
-        
+        /* Specific Positions */
+         .tutorial-tooltip.bottom.left-align { transform: translateX(-15%); }
+         .tutorial-tooltip.bottom.left-align:after { left: 15%; }
+         .tutorial-tooltip.bottom.right-align { transform: translateX(-85%); }
+         .tutorial-tooltip.bottom.right-align:after { left: 85%; }
+
+         .tutorial-tooltip.top.left-align { transform: translateX(-15%); }
+         .tutorial-tooltip.top.left-align:after { left: 15%; }
+         .tutorial-tooltip.top.right-align { transform: translateX(-85%); }
+         .tutorial-tooltip.top.right-align:after { left: 85%; }
+
+         .tutorial-tooltip.right.top-align { transform: translateY(-15%); }
+         .tutorial-tooltip.right.top-align:after { top: 15%; }
+         .tutorial-tooltip.right.bottom-align { transform: translateY(-85%); }
+         .tutorial-tooltip.right.bottom-align:after { top: 85%; }
+
+         .tutorial-tooltip.left.top-align { transform: translateY(-15%); }
+         .tutorial-tooltip.left.top-align:after { top: 15%; }
+         .tutorial-tooltip.left.bottom-align { transform: translateY(-85%); }
+         .tutorial-tooltip.left.bottom-align:after { top: 85%; }
+
+
         .tutorial-tooltip h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 16px;
-            color: #7e57c2;
+            margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #7e57c2;
         }
-        
         .tutorial-tooltip p {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.5;
+            margin: 0; font-size: 14px; line-height: 1.5;
         }
-        
+
         .tutorial-controls {
             position: fixed;
             bottom: 20px;
@@ -248,231 +177,103 @@ body.fullscreen-mode .html-viewer {
             padding: 10px 15px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             z-index: 1003;
+            min-width: 300px; /* Adjusted minimum */
+            flex-wrap: nowrap; /* Prevent wrapping by default */
         }
-        
+        @media (max-width: 450px) {
+             .tutorial-controls { flex-wrap: wrap; justify-content: center; }
+             .tutorial-progress { width: 100%; text-align: center; margin: 5px 0; }
+        }
+
+
         .tutorial-btn {
-            display: flex;
-            align-items: center;
-            background: #7e57c2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin: 0 5px;
+            display: flex; align-items: center; background: #7e57c2; color: white;
+            border: none; border-radius: 4px; padding: 8px 12px; font-size: 14px;
+            cursor: pointer; transition: background 0.2s; margin: 0 5px; white-space: nowrap;
         }
-        
-        .tutorial-btn:hover {
-            background: #6a3fba;
-        }
-        
-        .tutorial-btn svg {
-            margin: 0 5px;
-        }
-        
-        .tutorial-progress {
-            margin: 0 15px;
-            font-size: 14px;
-            color: #ccc;
-        }
-        
-        .tutorial-close-btn {
-            background: #444;
-            margin-left: 15px;
-        }
-        
-        .tutorial-close-btn:hover {
-            background: #666;
-        }
-        
+        .tutorial-btn:hover { background: #6a3fba; }
+        .tutorial-btn:disabled { background: #555; cursor: not-allowed; }
+        .tutorial-btn svg { margin: 0 5px; }
+
+        .tutorial-progress { margin: 0 15px; font-size: 14px; color: #ccc; }
+
+        .tutorial-close-btn { background: #444; margin-left: 15px; }
+        .tutorial-close-btn:hover { background: #666; }
+
         .tutorial-video-btn {
-            display: flex;
-            align-items: center;
-            background: #e44d26;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-size: 13px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.2s;
+            display: inline-flex; align-items: center; background: #e44d26; color: white;
+            border: none; border-radius: 4px; padding: 6px 10px; font-size: 13px;
+            cursor: pointer; margin-top: 10px; transition: background 0.2s;
         }
-        
-        .tutorial-video-btn:hover {
-            background: #f05a34;
+        .tutorial-video-btn:hover { background: #f05a34; }
+        .tutorial-video-btn svg { margin-right: 5px; }
+
+        /* Hamburger Menu Tutorial Button Style */
+        .tutorial-menu-btn { /* Copied from index.html styles */
+            width: 100%; text-align: left; padding: 10px 15px; border-radius: 4px;
+            background: transparent; border: none; display: flex; align-items: center;
+            gap: 10px; font-size: 14px; transition: all 0.2s ease;
+            color: var(--text-primary, #f6f6f6); cursor: pointer;
         }
-        
-        .tutorial-video-btn svg {
-            margin-right: 5px;
-        }
-        
-        .tutorial-button {
-            display: flex;
-            align-items: center;
-            background: #7e57c2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-right: 10px;
-        }
-        
-        .tutorial-button:hover {
-            background: #6a3fba;
-        }
-        
-        .tutorial-button svg {
-            margin-right: 5px;
-        }
-        
+        .tutorial-menu-btn:hover { background-color: var(--border-bg, #253351); }
+        .tutorial-menu-btn svg { flex-shrink: 0; fill: var(--text-primary, #f6f6f6); }
+
+
+        /* Video Modal Styles */
         .video-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: center;
         }
-        
         .video-modal-content {
-            position: relative;
-            width: 80%;
-            max-width: 800px;
-            background: #232323;
-            border-radius: 8px;
-            overflow: hidden;
+            position: relative; width: 80%; max-width: 800px; background: #232323;
+            border-radius: 8px; overflow: hidden;
         }
-        
-        .video-container {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-        }
-        
-        .video-container video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        
+        .video-container { position: relative; width: 100%; padding-top: 56.25%; /* 16:9 */ }
+        .video-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .video-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            background: #1a1a1a;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; background: #1a1a1a;
         }
-        
-        .video-modal-title {
-            color: white;
-            font-size: 16px;
-            margin: 0;
+        .video-modal-title { color: white; font-size: 16px; margin: 0; }
+        .video-modal-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+
+        /* Animations */
+        @keyframes tooltipEntry { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes highlightPulse {
+            margin-top: -50px
+            
+            
+            0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); } 50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); } }
+        .tutorial-highlight.pulse { 
+            margin-top: -50px
+            
+            animation: highlightPulse 2s infinite; }
+
+        /* Interactive element highlight on hover (Optional, can simplify) */
+        .tutorial-interactive-target {
+             /* Add a subtle effect to the target element itself if needed */
+             /* Example: outline: 2px dashed #7e57c2; */
+             cursor: pointer; /* Indicate clickability */
         }
-        
-        .video-modal-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        
-        /* Animation for tooltip entry */
-        @keyframes tooltipEntry {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* Style for JS editor when in editable step */
         .tutorial-code-edit-mode {
-            box-shadow: 0 0 0 2px #7e57c2 !important;
+            outline: 2px solid #7e57c2 !important;
+            box-shadow: 0 0 8px rgba(126, 87, 194, 0.5) !important;
             background: rgba(126, 87, 194, 0.1) !important;
             cursor: text !important;
         }
-        .tutorial-tooltip {
-            animation: tooltipEntry 0.3s ease-out;
-        }
-        
-        /* Pulse animation for highlight */
-        @keyframes highlightPulse {
-            0% {
-                box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.7);
-            }
-            50% {
-                box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.6);
-            }
-            100% {
-                box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.7);
-            }
-        }
-        
-        .tutorial-highlight.pulse {
-            animation: highlightPulse 2s infinite;
-        }
 
-        /* Interactive element highlight on hover */
-        .tutorial-interactive {
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        
-        .tutorial-interactive:hover {
-            box-shadow: 0 0 0 2px #7e57c2;
-        }
     `;
     document.head.appendChild(style);
-    
+
     // Event listeners for tutorial controls
     document.getElementById('tutorialPrev').addEventListener('click', showPreviousTutorialStep);
     document.getElementById('tutorialNext').addEventListener('click', showNextTutorialStep);
     document.getElementById('tutorialClose').addEventListener('click', endTutorial);
 }
-let workflowState = {
-    librarySelected: false,
-    previewRefreshed: false,
-    imageUploaded: false
-};
 
-function validateWorkflowProgress(action) {
-    switch(action) {
-        case 'library-selected':
-            workflowState.librarySelected = true;
-            break;
-        case 'preview-refreshed':
-            if (!workflowState.librarySelected) {
-                alert('Please select a JS library first!');
-                return false;
-            }
-            workflowState.previewRefreshed = true;
-            break;
-        case 'image-uploaded':
-            if (!workflowState.previewRefreshed) {
-                alert('Please refresh the preview after library selection first!');
-                return false;
-            }
-            workflowState.imageUploaded = true;
-            break;
-    }
-    return true;
-}
 function createVideoModal() {
-    // Create video modal
+    // Create video modal (Mostly unchanged, ensure IDs match)
     videoModal = document.createElement('div');
     videoModal.className = 'video-modal';
     videoModal.innerHTML = `
@@ -480,11 +281,9 @@ function createVideoModal() {
             <div class="video-modal-header">
                 <h3 class="video-modal-title">Tutorial Video</h3>
                 <button class="video-modal-close" id="closeVideoBtn">×</button>
-                <source src="https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052" type="video/mp4">
-
             </div>
             <div class="video-container">
-                <video controls id="tutorialVideo">
+                <video controls id="tutorialVideo" style="background-color: black;">
                     <source src="https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
@@ -492,38 +291,34 @@ function createVideoModal() {
         </div>
     `;
     document.body.appendChild(videoModal);
-    
-    // Get video element for later use
+
     videoElement = document.getElementById('tutorialVideo');
-    
-    // Close button event
-    document.getElementById('closeVideoBtn').addEventListener('click', function() {
-        videoModal.style.display = 'none';
-        if (videoElement) {
-            videoElement.pause();
-        }
-    });
-    
-    // Close when clicking outside the video container
-    videoModal.addEventListener('click', function(e) {
+
+    document.getElementById('closeVideoBtn').addEventListener('click', closeVideoModal);
+    videoModal.addEventListener('click', (e) => {
         if (e.target === videoModal) {
-            videoModal.style.display = 'none';
-            if (videoElement) {
-                videoElement.pause();
-            }
+            closeVideoModal();
         }
     });
 }
 
+function closeVideoModal() {
+     videoModal.style.display = 'none';
+     if (videoElement) {
+         videoElement.pause();
+         videoElement.src = ''; // Clear source to stop potential background loading
+     }
+}
+
+
 function addTutorialButton() {
-    // Remove the existing tutorial button if present
+    // Remove existing button just in case
     const existingBtn = document.getElementById('tutorialMenuButton');
     if (existingBtn) existingBtn.remove();
 
-    // Create tutorial button
     const tutorialButton = document.createElement('button');
     tutorialButton.id = 'tutorialMenuButton';
-    tutorialButton.className = 'tutorial-menu-btn';
+    tutorialButton.className = 'tutorial-menu-btn'; // Use the class from index.html CSS
     tutorialButton.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
@@ -532,387 +327,493 @@ function addTutorialButton() {
         </svg>
         Start Tutorial
     `;
-    
-    // Insert as first item in hamburger dropdown
+
     const hamburgerDropdown = document.getElementById('hamburgerDropdown');
     if (hamburgerDropdown) {
-        hamburgerDropdown.insertBefore(tutorialButton, hamburgerDropdown.firstChild);
-        tutorialButton.addEventListener('click', startTutorial);
-    }
-}
-
-function setupMouseInteractivity() {
-    // Add event delegators for interactive elements
-    document.addEventListener('mouseover', function(e) {
-        if (!tutorialActive) return;
-        
-        const target = e.target;
-        if (target.classList.contains('tutorial-interactive')) {
-            // Add visual feedback for hovering
-            target.classList.add('tutorial-interactive-hover');
+        // Insert it after the credits container for better ordering, or as first child if preferred
+        const creditsDiv = hamburgerDropdown.querySelector('.credit-container');
+        if (creditsDiv && creditsDiv.nextSibling) {
+             hamburgerDropdown.insertBefore(tutorialButton, creditsDiv.nextSibling);
+        } else {
+             hamburgerDropdown.appendChild(tutorialButton); // Fallback if structure changes
         }
-    });
-    
-    document.addEventListener('mouseout', function(e) {
-        const target = e.target;
-        if (target.classList.contains('tutorial-interactive')) {
-            // Remove hover effect
-            target.classList.remove('tutorial-interactive-hover');
-        }
-    });
-    
-    document.addEventListener('click', function(e) {
-        if (!tutorialActive) return;
-        
-        const target = e.target;
-        if (target.classList.contains('tutorial-interactive')) {
-            const action = target.getAttribute('data-tutorial-action');
-            if (action) {
-                handleTutorialAction(action, target);
+       
+        tutorialButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent dropdown from closing immediately
+            // Close the hamburger dropdown first
+            if (hamburgerDropdown.classList.contains('show')) {
+                hamburgerDropdown.classList.remove('show');
             }
-        }
-    });
-}
-
-function handleTutorialAction(action, element) {
-    switch (action) {
-        case 'next-step':
-            showNextTutorialStep();
-            break;
-        case 'prev-step':
-            showPreviousTutorialStep();
-            break;
-        case 'play-video':
-            const videoSection = element.getAttribute('data-video-section');
-            playTutorialVideo(videoSection);
-            break;
-        case 'run-code':
-            document.getElementById('refreshPreview').click();
-            break;
-        case 'close-tutorial':
-            endTutorial();
-            break;
-        default:
-            console.log('Unknown tutorial action:', action);
+            startTutorial();
+        });
+    } else {
+        console.error("Hamburger dropdown not found. Cannot add tutorial button.");
+        // Fallback: Add to header actions if dropdown fails?
+         const headerActions = document.querySelector('.header .actions');
+         if (headerActions) {
+             headerActions.appendChild(tutorialButton);
+             tutorialButton.addEventListener('click', startTutorial);
+         }
     }
 }
+
+
+// Simplified interactivity setup - only handles clicks on specific elements if needed
+// function setupMouseInteractivity() {
+//     document.addEventListener('click', function(e) {
+//         if (!tutorialActive) return;
+
+//         const currentStepData = tutorialSteps[currentTutorialStep];
+//         if (!currentStepData || !currentStepData.interactive) return;
+
+//         const targetElement = document.querySelector(currentStepData.element);
+//         if (targetElement && targetElement.contains(e.target)) {
+//             // Check if a specific action is required by this click
+//             if (currentStepData.actionRequired) {
+//                 // Potentially add custom logic here based on step index or a custom action property
+//                 console.log(`Interactive element clicked for step ${currentTutorialStep}`);
+//                 // Example: if (currentStepData.customAction === 'openDropdown') { ... }
+
+//                 // Automatically advance to the next step after interaction
+//                 showNextTutorialStep();
+//             }
+//         }
+//     }, true); // Use capture phase to potentially intercept clicks
+// }
+
+// Removed handleTutorialAction as we simplify interactivity for now.
+// Removed workflow validation functions.
 
 function startTutorial() {
+    // Ensure hamburger is closed if open
+    const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+    if (hamburgerDropdown && hamburgerDropdown.classList.contains('show')) {
+        hamburgerDropdown.classList.remove('show');
+    }
+
     tutorialActive = true;
     currentTutorialStep = 0;
-    
-    // Define tutorial steps - this is the main content of the tutorial
+
+    // Define tutorial steps based on the NEW HTML structure
     tutorialSteps = [
-    {
-        element: '#jsLibraryBtn',
-        title: 'Select JavaScript Library',
-        content: 'First, choose a JavaScript library from the dropdown to enable animation capabilities.',
-        position: 'bottom',
-        interactive: true,
-        actionRequired: true
-    },
-    {
-        element: '#refreshPreview',
-        title: 'Refresh Preview',
-        content: 'After selecting a library, click here to initialize the animation system.',
-        position: 'right',
-        pulse: true,
-        actionRequired: true
-    },
-  
-    {
-        element: '#jsEditor',
-        title: 'Modify Animation Code',
-        content: 'Edit the generated JavaScript code here. The animation will update automatically on save.',
-        position: 'left',
-        interactive: true,
-        codeEditable: true
-    },
-    {
-        element: '#jsOutput',
-        title: 'Debugging Console',
-        content: 'View errors and logs here if your animation isn\'t working as expected.',
-        position: 'top',
-        interactive: true
-    },
+
         {
-            element: '.logo',
-            title: 'Welcome to AI Code Editor',
-            content: 'This tutorial will guide you through the main features of our AI-powered code editor. Click Next to continue.',
-            position: 'bottom right',
-            video: 'intro',
-            showVideo: true
-        },
-        {
-            element: '.editor-column:nth-child(1)',
-            title: 'HTML Editor',
-            content: 'This is where you edit your HTML code. The editor provides real-time syntax checking and error highlighting.',
-            position: 'right',
-            interactive: true
-        },
-        {
-            element: '.editor-column:nth-child(2)',
-            title: 'CSS Editor',
-            content: 'Style your HTML using CSS in this editor. Changes will be reflected in the preview immediately.',
-            position: 'right',
-            interactive: true
-        },
-        {
-            element: '.editor-column:nth-child(3)',
-            title: 'JavaScript Editor',
-            content: 'Add interactivity to your page with JavaScript. This is where you\'ll create animation code for images.',
-            position: 'bottom',
-            interactive: true
-        },
-        {
-            element: '#jsDeepseekBtn',
-            title: 'AI Code Generation',
-            content: 'Click this button to use AI to generate or improve your JavaScript code based on your current code and prompts.',
-            position: 'bottom',
-            pulse: true
-        },
-        {
-            element: '#promptInput',
-            title: 'AI Prompt',
-            content: 'Enter a description of what you want the AI to do with your code. Be specific about the functionality you need.',
-            position: 'bottom',
-            interactive: true
-        },
-        {
-            element: '#magicBtn',
-            title: 'Generate Button',
-            content: 'After entering your prompt, click this button to generate code based on your requirements.',
-            position: 'bottom',
-            pulse: true
-        },
-        {
-            element: '#imageUploadBtn',
-            title: 'Image Upload',
-            content: 'Upload images to animate. You can also paste images directly or drag and drop them into the editor.',
-            position: 'bottom'
-        },
-        {
-            element: '.html-viewer',
-            title: 'Preview Panel',
-            content: 'See the result of your code in real-time. Your animations will appear here.',
-            position: 'top',
-            interactive: true
-        },
-        {
-            element: '#refreshPreview',
-            title: 'Refresh Preview',
-            content: 'Click this button to manually refresh the preview with your latest code changes.',
-            position: 'right',
-            pulse: true
-        },
-        {
-            element: '#recordButton',
-            title: 'Record Animation',
-            content: 'Capture your animations as video files that you can download and share.',
-            position: 'right'
-        },
-        {
-            element: '#toggleFullscreen',
-            title: 'Fullscreen Mode',
-            content: 'Toggle fullscreen mode to focus on your animation preview.',
-            position: 'right'
-        },
-        {
-            element: '#jsLibraryBtn',
+            element: '#jsLibraryBtn', // Target the JS library button
             title: 'JavaScript Libraries',
-            content: 'Access pre-built JavaScript libraries and example code to help you get started quickly.',
-            position: 'right'
+            content: 'Click this button to open the library selection dropdown. This is where you can add pre-built libraries to your project.',
+            position: 'bottom left-align',
+            pulse: true,
         },
         {
-            element: '.js-viewer',
-            title: 'Console Output',
-            content: 'View your JavaScript console output, errors, and logs here for debugging.',
-            position: 'top',
-            interactive: true
+            element: '.dropdown-list', // Target the dropdown list that appears
+            title: 'Select a Library',
+            content: 'Choose any library from this list to add to your project. Click on one of these options.',
+            position: 'bottom bottom-align',
+          
+            // This step will appear after the library button is clicked
         },
         {
-            element: '#hamburgerBtn',
-            title: 'Additional Settings',
-            content: 'Access more settings and options, such as adjusting the number of animation frames.',
+            element: '#confirmLibraryBtn', // Assuming there's a confirm button in the dropdown
+            title: 'Confirm Selection',
+            content: 'Click "OK" to add the selected library to your project.',
+            position: 'bottom',
+            pulse: true,
+            
+   
+        },
+        // Continue with the rest of your tutorial steps from here
+        {
+            element: '.header .logo', // Target logo in the header
+            title: 'Welcome to AI Code Editor!',
+            content: 'Now that you\'ve added a library, let\'s continue exploring the interface. Use the Next/Previous buttons below or press Arrow Keys.',
+            position: 'bottom left-align', // Position relative to logo
+            video: 'intro', // Optional video slug
+            showVideo: false // Set to true to show button
+        },
+        {
+            element: '.header .logo', // Target logo in the header
+            title: 'Welcome to AI Code Editor!',
+            content: 'This tutorial guides you through the interface. Use the Next/Previous buttons below or press Arrow Keys.',
+            position: 'bottom left-align', // Position relative to logo
+            video: 'intro', // Optional video slug
+            showVideo: false // Set to true to show button
+        },
+        {
+            element: '#jsEditor', // Target the JS editor textarea
+            title: 'JavaScript Editor',
+            content: 'This is your main coding area for JavaScript animations. It\'s on the right side.',
+            position: 'left top-align', // Position relative to the editor
+        },
+         {
+            element: '#jsDeepseekBtn', // Target the AI button for JS
+            title: 'AI Code Assistance (JS)',
+            content: 'Click this button above the JS editor to get AI help with your JavaScript code.',
+            position: 'bottom left-align',
+            pulse: true
+        },
+        {
+            element: '#promptInput', // Target the prompt input in the header
+            title: 'AI Prompt Input',
+            content: 'Enter instructions here for the AI. Describe the animation or changes you want.',
+            position: 'bottom',
+            interactive: false // Input field, interaction is typing
+        },
+        {
+            element: '#magicBtn', // Target the Generate button in the header
+            title: 'Generate Code',
+            content: 'Click here after entering your prompt to let the AI generate or modify the code in the JS editor.',
+            position: 'bottom right-align',
+            pulse: true
+        },
+         {
+            element: '#imageUploadBtn', // Target the upload button in the header
+            title: 'Upload Image',
+            content: 'Click to upload an image for animation. You can also drag & drop or paste images onto the page.',
+            position: 'bottom right-align'
+        },
+        {
+            element: '#htmlOutput', // Target the main preview area
+            title: 'Live Preview',
+            content: 'Your HTML and animations appear here on the left side. Use Refresh to update.',
+            position: 'right top-align', // Position relative to the preview
+            interactive: false
+        },
+        {
+            element: '#refreshPreview', // Target the refresh button in viewer header
+            title: 'Refresh Preview',
+            content: 'Click this button to update the preview panel with your latest code changes.',
+            position: 'bottom right-align',
+            pulse: true
+        },
+         {
+            element: '#jsLibraryBtn', // Target the JS library button
+            title: 'JavaScript Libraries',
+            content: 'Select pre-built JavaScript libraries (like GSAP, Three.js) here to use in your project.',
+            position: 'bottom left-align'
+        },
+         {
+            element: '#recordButton', // Target the record button
+            title: 'Record Animation',
+            content: 'Use this to capture your animation as a video or GIF sequence.',
             position: 'bottom'
         },
         {
-            element: 'body',
+            element: '#toggleFullscreen', // Target the fullscreen button
+            title: 'Fullscreen Preview',
+            content: 'Click to view the preview panel in fullscreen mode.',
+            position: 'bottom'
+        },
+        {
+            element: '#hamburgerBtn', // Target the hamburger button itself
+            title: 'Settings Menu',
+            content: 'Click this icon to open the settings menu for more options.',
+            position: 'bottom right-align',
+            interactive: false, // Make clicking hamburger the interaction?
+            // actionRequired: true // If user MUST click it to proceed
+        },
+        {
+            element: '#hamburgerDropdown .image-control-panel', // Target image count setting within dropdown
+            title: 'Image Frame Count',
+            content: 'Adjust the number of frames for generated GIF/video recordings here (inside settings menu).',
+            position: 'left top-align',
+            // preAction: () => document.getElementById('hamburgerBtn')?.click() // Ensure menu is open
+        },
+         {
+            element: '#toggleAdvancedBtn', // Target advanced toggle button
+            title: 'Advanced Mode',
+            content: 'Click this in the settings menu to show/hide the HTML, CSS editors, and the Console/CSS output tabs.',
+            position: 'left',
+            // preAction: () => document.getElementById('hamburgerBtn')?.click() // Ensure menu is open
+        },
+        // --- Optional Steps for Advanced Mode Elements ---
+        // Uncomment and adjust if you guide user to enable Advanced Mode
+         // {
+         //     element: '#htmlEditor', // Target HTML editor (assuming Advanced Mode is on)
+         //     title: 'HTML Editor',
+         //     content: 'Edit your HTML structure here (visible in Advanced Mode).',
+         //     position: 'right',
+         //     // Requires Advanced Mode to be active
+         // },
+         // {
+         //     element: '#cssEditor', // Target CSS editor (assuming Advanced Mode is on)
+         //     title: 'CSS Editor',
+         //     content: 'Style your elements using CSS here (visible in Advanced Mode).',
+         //     position: 'right',
+         //     // Requires Advanced Mode to be active
+         // },
+        // {
+        //     element: '.css-js-viewer-column .tab[data-tab="console"]', // Target Console tab
+        //     title: 'Console Output',
+        //     content: 'View JavaScript errors and logs here (visible in Advanced Mode). Click the "Console" tab if needed.',
+        //     position: 'top',
+        //     // Requires Advanced Mode to be active
+        // },
+        // --- End Optional Steps ---
+        {
+            element: 'body', // Target the whole page
             title: 'Tutorial Complete!',
-            content: 'You now know the basics of using the AI Code Editor. Start creating your own animations or use the AI to help you. Happy coding!',
+            content: 'You\'ve learned the basics! Experiment with coding, AI generation, and image uploads. Happy creating!',
             position: 'center',
-            showVideo: true,
-            video: 'complete'
+            video: 'complete', // Optional completion video
+            showVideo: false // Set to true to show button
         }
     ];
-    
+
     // Update total steps counter
     document.getElementById('tutorialTotalSteps').textContent = tutorialSteps.length;
-    
+
     // Show the first step
     showTutorialStep(currentTutorialStep);
-    
-    // Show tutorial controls
-    tutorialOverlay.style.display = 'block';
+
+    // Show tutorial UI
+    highlightOverlay.style.display = 'block'; // Show the dimming overlay
     tutorialControls.style.display = 'flex';
-}
-function handleLibrarySelection() {
-    if (currentTutorialStep === 0) {
-        showNextTutorialStep();
-    }
+    tutorialTooltip.style.display = 'block'; // Ensure tooltip is visible
 }
 
-function handleRefreshAfterLibrary() {
-    if (currentTutorialStep === 1) {
-        showNextTutorialStep();
-    }
-}
-
-// Add to setupMouseInteractivity()
-document.getElementById('jsLibraryBtn').addEventListener('click', handleLibrarySelection);
-document.getElementById('refreshPreview').addEventListener('click', handleRefreshAfterLibrary);
-
-function enableCodeSelection() {
-    const jsEditor = document.getElementById('jsEditor');
-    if (jsEditor && currentTutorialStep === 3) {
-        jsEditor.select();
-        jsEditor.setAttribute('contenteditable', 'true');
-        jsEditor.classList.add('tutorial-code-edit-mode');
-    }
-}
 
 function showTutorialStep(stepIndex) {
-    if (stepIndex < 0 || stepIndex >= tutorialSteps.length) {
-        endTutorial();
+    if (!tutorialActive || stepIndex < 0 || stepIndex >= tutorialSteps.length) {
+        if (tutorialActive) endTutorial(); // End only if it was active
         return;
     }
-    
+
     const step = tutorialSteps[stepIndex];
-    
+
+    // Execute pre-action if defined (e.g., open dropdown)
+    if (step.preAction && typeof step.preAction === 'function') {
+       try {
+            step.preAction();
+       } catch (e) {
+           console.error("Error executing preAction for step:", stepIndex, e);
+       }
+    }
+
     // Update step counter
     document.getElementById('tutorialCurrentStep').textContent = stepIndex + 1;
-    
-    // Remove highlight from previous element
+
+    // Clear previous highlight and interactive classes
     if (highlightedElement) {
         highlightedElement.remove();
+        highlightedElement = null;
     }
-    
-    // Create a new highlight if there's an element to highlight
-    if (step.element && step.element !== 'body') {
-        const targetElement = document.querySelector(step.element);
-        if (targetElement) {
-            const rect = targetElement.getBoundingClientRect();
-            
-            highlightedElement = document.createElement('div');
-            highlightedElement.className = 'tutorial-highlight';
-            if (step.pulse) {
-                highlightedElement.classList.add('pulse');
-            }
-            
-            // Position the highlight over the target element
-            highlightedElement.style.left = `${rect.left}px`;
-            highlightedElement.style.top = `${rect.top}px`;
-            highlightedElement.style.width = `${rect.width}px`;
-            highlightedElement.style.height = `${rect.height}px`;
-            
-            document.body.appendChild(highlightedElement);
-            
-            // Make element interactive if specified
-            if (step.interactive) {
-                targetElement.classList.add('tutorial-interactive');
-                targetElement.setAttribute('data-tutorial-action', 'next-step');
-            }
+    document.querySelectorAll('.tutorial-interactive-target').forEach(el => {
+        el.classList.remove('tutorial-interactive-target');
+        // Optionally remove specific event listeners added for interactivity if any
+    });
+     document.querySelectorAll('.tutorial-code-edit-mode').forEach(el => {
+        el.classList.remove('tutorial-code-edit-mode');
+        el.removeAttribute('contenteditable');
+    });
+
+
+    const targetElement = step.element === 'body' ? document.body : document.querySelector(step.element);
+
+    if (!targetElement) {
+        console.warn(`Tutorial step ${stepIndex}: Element "${step.element}" not found. Skipping highlight.`);
+        // Position tooltip centrally or skip step?
+         tutorialTooltip.style.top = '50%';
+         tutorialTooltip.style.left = '50%';
+         tutorialTooltip.style.transform = 'translate(-50%, -50%)';
+         tutorialTooltip.className = 'tutorial-tooltip'; // Reset position class
+    } else {
+        // Ensure target element is visible (basic check)
+        // This might need refinement for complex cases (e.g., inside scrolled containers)
+        if (targetElement !== document.body && targetElement.offsetParent === null) {
+            console.warn(`Tutorial step ${stepIndex}: Element "${step.element}" is not visible (maybe hidden by CSS or parent). Trying to show anyway.`);
+            // Attempt to make it visible - this is risky and depends on how it's hidden
+            // Example: targetElement.style.display = 'block'; // Or flex, etc.
         }
+
+
+        const rect = targetElement.getBoundingClientRect();
+
+        // Create highlight element (the cutout)
+        highlightedElement = document.createElement('div');
+        highlightedElement.className = 'tutorial-highlight';
+        if (step.pulse) {
+            highlightedElement.classList.add('pulse');
+        }
+        highlightedElement.style.cssText = "margin-top: 0px !important; position: fixed;";
+
+        // Position the highlight cutout
+        highlightedElement.style.position = 'fixed'; // Use fixed position relative to viewport
+        highlightedElement.style.left = `${rect.left}px`;
+        highlightedElement.style.top = `${rect.top}px`;
+        highlightedElement.style.width = `${rect.width}px`;
+        highlightedElement.style.height = `${rect.height}px`;
+
+        // Add highlight element to the body (it will sit above the overlay)
+        document.body.appendChild(highlightedElement);
+
+        // Add interactive class to the *actual* target element if needed
+        if (step.interactive) {
+            targetElement.classList.add('tutorial-interactive-target');
+             // Add specific event listeners here if simple class hover isn't enough
+        }
+         // Special handling for code editor step
+        if (step.codeEditable && targetElement.tagName === 'TEXTAREA') {
+            targetElement.classList.add('tutorial-code-edit-mode');
+            targetElement.setAttribute('contenteditable', 'true'); // Make textarea visually editable if needed
+             // Consider focusing the editor: targetElement.focus();
+        }
+
+
+        // Position the tooltip based on element and specified position
+        positionTooltip(targetElement, step.position);
     }
-    
+
     // Update tooltip content
     let tooltipContent = `<h3>${step.title}</h3><p>${step.content}</p>`;
-    
-    // Add video button if available
-    if (step.showVideo) {
+    if (step.showVideo && step.video) {
         tooltipContent += `
-            <button class="tutorial-video-btn" data-tutorial-action="play-video" data-video-section="${step.video}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
-                </svg>
+            <button class="tutorial-video-btn" data-video-section="${step.video}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
                 Watch Video
             </button>
         `;
     }
-    
     tutorialTooltip.innerHTML = tooltipContent;
-    
-    // Position the tooltip
-    if (step.element === 'body' || step.position === 'center') {
-        // Center in the viewport
+
+     // Add click listener for video buttons inside the tooltip AFTER innerHTML is set
+     tutorialTooltip.querySelectorAll('.tutorial-video-btn').forEach(button => {
+         button.removeEventListener('click', handleVideoBtnClick); // Remove previous listener
+         button.addEventListener('click', handleVideoBtnClick);
+     });
+
+
+    // Update button states
+    document.getElementById('tutorialPrev').disabled = stepIndex === 0;
+    document.getElementById('tutorialNext').disabled = false; // Re-enable next button
+    document.getElementById('tutorialNext').innerHTML = stepIndex === tutorialSteps.length - 1
+        ? 'Finish <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+        : 'Next <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+
+
+    // If action required, disable 'Next' until interaction occurs (simplified approach)
+    // This needs more robust implementation if interaction isn't just clicking the element
+     if (step.actionRequired) {
+       document.getElementById('tutorialNext').disabled = true;
+       // Add a listener to the target element or document to re-enable 'Next'
+       // Example (very basic - might need specific listeners):
+       const enableNext = () => {
+           if(tutorialActive && currentTutorialStep === stepIndex) {
+               document.getElementById('tutorialNext').disabled = false;
+               targetElement?.removeEventListener('click', enableNext, true); // Clean up
+               document.removeEventListener('input', enableNext, true); // Clean up for input fields
+           }
+       };
+       targetElement?.addEventListener('click', enableNext, { capture: true, once: true });
+        // If it's an input field, maybe listen for input event
+        if (targetElement?.tagName === 'INPUT' || targetElement?.tagName === 'TEXTAREA') {
+             targetElement?.addEventListener('input', enableNext, { capture: true, once: true });
+        }
+     }
+}
+
+function handleVideoBtnClick(event) {
+    const videoSection = event.currentTarget.getAttribute('data-video-section');
+    if (videoSection) {
+        playTutorialVideo(videoSection);
+    }
+}
+
+
+function positionTooltip(targetElement, position = 'bottom') {
+    if (!targetElement || targetElement === document.body || position === 'center') {
+        top += 50; // Compensate for the -50px margin
+
+      
         tutorialTooltip.style.top = '50%';
         tutorialTooltip.style.left = '50%';
         tutorialTooltip.style.transform = 'translate(-50%, -50%)';
-        tutorialTooltip.className = 'tutorial-tooltip';
-    } else {
-        const targetElement = document.querySelector(step.element);
-        if (targetElement) {
-            const rect = targetElement.getBoundingClientRect();
-            
-            tutorialTooltip.className = `tutorial-tooltip ${step.position}`;
-            
-            // Position based on specified position
-            switch (step.position) {
-                case 'top':
-                    tutorialTooltip.style.bottom = `${window.innerHeight - rect.top + 15}px`;
-                    tutorialTooltip.style.left = `${rect.left + rect.width / 2}px`;
-                    tutorialTooltip.style.transform = 'translateX(-50%)';
-                    break;
-                case 'bottom':
-                    tutorialTooltip.style.top = `${rect.bottom + 15}px`;
-                    tutorialTooltip.style.left = `${rect.left + rect.width / 2}px`;
-                    tutorialTooltip.style.transform = 'translateX(-50%)';
-                    break;
-                case 'left':
-                    tutorialTooltip.style.right = `${window.innerWidth - rect.left + 15}px`;
-                    tutorialTooltip.style.top = `${rect.top + rect.height / 2}px`;
-                    tutorialTooltip.style.transform = 'translateY(-50%)';
-                    break;
-                case 'right':
-                    tutorialTooltip.style.left = `${rect.right + 15}px`;
-                    tutorialTooltip.style.top = `${rect.top + rect.height / 2}px`;
-                    tutorialTooltip.style.transform = 'translateY(-50%)';
-                    break;
-            }
-        }
+        tutorialTooltip.className = 'tutorial-tooltip'; // Reset class
+        return;
     }
-    
-    // Show tooltip
-    tutorialTooltip.style.display = 'block';
-    
-    // Update button states
-    document.getElementById('tutorialPrev').disabled = stepIndex === 0;
-    document.getElementById('tutorialNext').textContent = stepIndex === tutorialSteps.length - 1 ? 'Finish' : 'Next';
-    
-    // Add click handlers to video buttons
-    const videoButtons = tutorialTooltip.querySelectorAll('[data-tutorial-action="play-video"]');
-    videoButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const videoSection = button.getAttribute('data-video-section');
-            playTutorialVideo(videoSection);
-        });
-    });
+
+    const rect = targetElement.getBoundingClientRect();
+    const tooltipRect = tutorialTooltip.getBoundingClientRect(); // Get tooltip size
+    const margin = 15; // Space between element and tooltip
+
+    let top, left;
+    let transform = '';
+    let positionClass = position.split(' ')[0]; // e.g., 'top', 'bottom'
+    let alignmentClass = position.split(' ')[1] || ''; // e.g., 'left-align'
+
+    switch (positionClass) {
+        case 'top':
+            top = rect.top - tooltipRect.height - margin;
+            left = rect.left + rect.width / 2;
+            transform = 'translateX(-50%)';
+             if(alignmentClass === 'left-align') { transform = 'translateX(-15%)'; }
+             if(alignmentClass === 'right-align') { transform = 'translateX(-85%)'; }
+            break;
+        case 'bottom':
+            top = rect.bottom + margin;
+            left = rect.left + rect.width / 2;
+            transform = 'translateX(-50%)';
+             if(alignmentClass === 'left-align') { transform = 'translateX(-15%)'; }
+             if(alignmentClass === 'right-align') { transform = 'translateX(-85%)'; }
+            break;
+        case 'left':
+            left = rect.left - tooltipRect.width - margin;
+            top = rect.top + rect.height / 2;
+            transform = 'translateY(-50%)';
+             if(alignmentClass === 'top-align') { transform = 'translateY(-15%)'; }
+             if(alignmentClass === 'bottom-align') { transform = 'translateY(-85%)'; }
+            break;
+        case 'right':
+            left = rect.right + margin;
+            top = rect.top + rect.height / 2;
+            transform = 'translateY(-50%)';
+             if(alignmentClass === 'top-align') { transform = 'translateY(-15%)'; }
+             if(alignmentClass === 'bottom-align') { transform = 'translateY(-85%)'; }
+            break;
+        default: // Fallback to bottom center
+            positionClass = 'bottom';
+            top = rect.bottom + margin;
+            left = rect.left + rect.width / 2;
+            transform = 'translateX(-50%)';
+    }
+
+     // Adjust if tooltip goes off-screen
+     const vw = window.innerWidth;
+     const vh = window.innerHeight;
+
+     // Check right boundary
+     if (left + tooltipRect.width > vw - margin) {
+         left = vw - tooltipRect.width - margin;
+          if (positionClass === 'top' || positionClass === 'bottom') transform = ''; // Reset transform if adjusted horizontally
+     }
+     // Check left boundary
+     if (left < margin) {
+         left = margin;
+         if (positionClass === 'top' || positionClass === 'bottom') transform = ''; // Reset transform
+     }
+     // Check bottom boundary
+      if (top + tooltipRect.height > vh - margin) {
+         top = vh - tooltipRect.height - margin;
+          if (positionClass === 'left' || positionClass === 'right') transform = ''; // Reset transform if adjusted vertically
+          // If adjusting vertical pushes it off top, maybe switch side? Complex.
+      }
+     // Check top boundary
+     if (top < margin) {
+         top = margin;
+         if (positionClass === 'left' || positionClass === 'right') transform = ''; // Reset transform
+     }
+
+
+    tutorialTooltip.style.top = `${top}px`;
+    tutorialTooltip.style.left = `${left}px`;
+    tutorialTooltip.style.transform = transform;
+    tutorialTooltip.style.right = 'auto'; // Ensure these are reset
+    tutorialTooltip.style.bottom = 'auto';
+    tutorialTooltip.className = `tutorial-tooltip ${positionClass} ${alignmentClass}`.trim(); // Add classes for arrow direction
 }
 
+
 function showNextTutorialStep() {
-    // Remove interactive class from current element if it exists
-    if (currentTutorialStep < tutorialSteps.length) {
-        const currentStep = tutorialSteps[currentTutorialStep];
-        if (currentStep.element && currentStep.interactive) {
-            const element = document.querySelector(currentStep.element);
-            if (element) {
-                element.classList.remove('tutorial-interactive');
-                element.removeAttribute('data-tutorial-action');
-            }
-        }
-    }
-    
+    if (!tutorialActive) return;
     currentTutorialStep++;
     if (currentTutorialStep >= tutorialSteps.length) {
         endTutorial();
@@ -922,245 +823,191 @@ function showNextTutorialStep() {
 }
 
 function showPreviousTutorialStep() {
-    // Remove interactive class from current element if it exists
-    if (currentTutorialStep < tutorialSteps.length) {
-        const currentStep = tutorialSteps[currentTutorialStep];
-        if (currentStep.element && currentStep.interactive) {
-            const element = document.querySelector(currentStep.element);
-            if (element) {
-                element.classList.remove('tutorial-interactive');
-                element.removeAttribute('data-tutorial-action');
-            }
-        }
-    }
-    
+     if (!tutorialActive) return;
     currentTutorialStep--;
     if (currentTutorialStep < 0) {
-        currentTutorialStep = 0;
+        currentTutorialStep = 0; // Stay on first step
     }
     showTutorialStep(currentTutorialStep);
 }
 
 function endTutorial() {
+    if (!tutorialActive) return; // Prevent multiple calls
     tutorialActive = false;
-    
+
     // Hide tutorial elements
-    tutorialOverlay.style.display = 'none';
+    highlightOverlay.style.display = 'none';
     tutorialTooltip.style.display = 'none';
     tutorialControls.style.display = 'none';
-    
-    // Remove any remaining highlight
+
+    // Remove highlight and interactive classes
     if (highlightedElement) {
         highlightedElement.remove();
         highlightedElement = null;
     }
-    
-    // Remove interactive classes from all elements
-    document.querySelectorAll('.tutorial-interactive').forEach(element => {
-        element.classList.remove('tutorial-interactive');
-        element.removeAttribute('data-tutorial-action');
+     document.querySelectorAll('.tutorial-interactive-target').forEach(el => {
+        el.classList.remove('tutorial-interactive-target');
+     });
+     document.querySelectorAll('.tutorial-code-edit-mode').forEach(el => {
+        el.classList.remove('tutorial-code-edit-mode');
+        el.removeAttribute('contenteditable');
     });
-    
-    // Show completion message
-    const jsOutput = document.getElementById('jsOutput');
-    if (jsOutput) {
-        jsOutput.innerHTML = `
-            <div style="color: #7e57c2; padding: 15px; border-radius: 4px; background: rgba(126, 87, 194, 0.1); margin-bottom: 15px;">
-                <h3 style="margin-top: 0;">Tutorial Completed! 🎉</h3>
-                <p>You've successfully completed the AI Code Editor tutorial. You can restart the tutorial anytime by clicking the Tutorial button.</p>
-                <button class="tutorial-video-btn" id="watchTutorialVideoBtn" style="margin-top: 10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
-                    </svg>
-                    Watch Full Tutorial Video
-                </button>
-            </div>
-        `;
-        
-        // Add event listener to the full tutorial video button
-        const watchVideoBtn = document.getElementById('watchTutorialVideoBtn');
-        if (watchVideoBtn) {
-            watchVideoBtn.addEventListener('click', function() {
-                playTutorialVideo('full');
-            });
-        }
-    }
 
-    document.getElementById('hamburgerBtn').addEventListener('click', function(e) {
-        const dropdown = document.getElementById('hamburgerDropdown');
-        if (tutorialActive) {
-            // If tutorial is active, prevent closing
-            dropdown.classList.add('show');
-            return;
-        }
-        dropdown.classList.toggle('show');
-    });
+
+    // Optional: Show completion message (e.g., in console or a small notification)
+    console.log("Tutorial finished!");
+     logToConsole("Tutorial Completed! 🎉 You can restart it from the settings menu.", "success");
+
+
+    // Re-enable normal hamburger menu behavior if it was modified
+     const hamburgerBtn = document.getElementById('hamburgerBtn');
+     const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+     if (hamburgerBtn && hamburgerDropdown) {
+          // Remove any tutorial-specific listeners if added
+          // Restore original click listener if it was replaced
+     }
+
+     // Remove global listeners added by tutorial
+     document.removeEventListener('keydown', handleTutorialKeydown);
+     window.removeEventListener('resize', handleTutorialResize);
 }
 
 function playTutorialVideo(section) {
-    // Get the video URL based on the section
-    let videoUrl = '';
-    
-    switch(section) {
+    // Map sections to actual video URLs (ensure these URLs are correct)
+    let videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052'; // Default/Placeholder
+
+    switch (section) {
         case 'intro':
-            videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
+            videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/intro_placeholder.mp4?v=...'; // Replace with actual URL
             break;
         case 'complete':
-            videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
+             videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/outro_placeholder.mp4?v=...'; // Replace with actual URL
             break;
-        case 'full':
-            videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
+        case 'full': // Example for a full tutorial video link
+             videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/full_tutorial_placeholder.mp4?v=...'; // Replace with actual URL
             break;
-        default:
-            videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
+        // Add cases for specific feature videos if needed
+        // case 'ai-generate': videoUrl = '...'; break;
     }
-    
-    // Use a placeholder video if real videos aren't available yet
-    videoUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
-    
-    // Set the video source
-    videoElement.src = videoUrl;
-    
-    // Show the modal
-    videoModal.style.display = 'flex';
-    
-    // Play the video
-    videoElement.play();
+    // Use placeholder if actual URL isn't set for the section
+     const placeholderUrl = 'https://cdn.glitch.global/bed4b085-2a8a-4e39-93c7-8f065ab89cc2/abc.mp4?v=1743223795052';
+     if (!videoUrl || videoUrl.includes('placeholder')) {
+         console.warn(`Video section "${section}" not found or using placeholder. Playing default video.`);
+         videoUrl = placeholderUrl;
+     }
+
+
+    if (videoElement) {
+        videoElement.src = videoUrl;
+        videoModal.style.display = 'flex';
+        videoElement.load(); // Ensure the new source is loaded
+        videoElement.play().catch(e => console.error("Video play failed:", e));
+    } else {
+        console.error("Video element not found.");
+    }
 }
 
-// Additional interactivity features for the editor
+// --- Event Handlers ---
 
-// Add drag functionality to tutorial tooltip
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-
-// tutorialTooltip.addEventListener('mousedown', function(e) {
-//     // Only enable dragging from the title area
-//     if (e.target.tagName === 'H3') {
-//         isDragging = true;
-//         dragStartX = e.clientX;
-//         dragStartY = e.clientY;
-        
-//         // Get current position
-//         const tooltipRect = tutorialTooltip.getBoundingClientRect();
-//         tutorialTooltip.setAttribute('data-x', tooltipRect.left);
-//         tutorialTooltip.setAttribute('data-y', tooltipRect.top);
-        
-//         // Change cursor
-//         tutorialTooltip.style.cursor = 'grabbing';
-//         e.preventDefault();
-//     }
-// });
-
-document.addEventListener('mousemove', function(e) {
-    if (!isDragging) return;
-    
-    const deltaX = e.clientX - dragStartX;
-    const deltaY = e.clientY - dragStartY;
-    
-    const startX = parseFloat(tutorialTooltip.getAttribute('data-x'));
-    const startY = parseFloat(tutorialTooltip.getAttribute('data-y'));
-    
-    // Update position
-    tutorialTooltip.style.left = `${startX + deltaX}px`;
-    tutorialTooltip.style.top = `${startY + deltaY}px`;
-    tutorialTooltip.style.right = 'auto';
-    tutorialTooltip.style.bottom = 'auto';
-    tutorialTooltip.style.transform = 'none';
-});
-
-document.addEventListener('mouseup', function() {
-    if (isDragging) {
-        isDragging = false;
-        tutorialTooltip.style.cursor = 'default';
-    }
-});
-
-// Keyboard navigation support
-document.addEventListener('keydown', function(e) {
+// Keyboard navigation
+function handleTutorialKeydown(e) {
     if (!tutorialActive) return;
-    
+
     if (e.key === 'Escape') {
         endTutorial();
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        showNextTutorialStep();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        showPreviousTutorialStep();
-    }
-});
-
-// Resize handler to reposition tutorial elements
-window.addEventListener('resize', function() {
-    if (!tutorialActive) return;
-    
-    // Reposition the current step to handle window resizing
-    showTutorialStep(currentTutorialStep);
-});
-
-// Handle clicks on the animation canvas
-document.addEventListener('click', function(e) {
-    // Check if we're in an active tutorial and the canvas is clicked
-    if (tutorialActive && e.target.tagName === 'CANVAS') {
-        // If we're on the step that focuses on the canvas
-        const currentStep = tutorialSteps[currentTutorialStep];
-        if (currentStep && (currentStep.element === '.html-viewer' || currentStep.element === '.html-viewer canvas')) {
-            showNextTutorialStep();
+    } else if (e.key === 'ArrowRight') {
+        // Check if next button is disabled (e.g., action required)
+        if (!document.getElementById('tutorialNext').disabled) {
+             showNextTutorialStep();
         }
+    } else if (e.key === 'ArrowLeft') {
+         // Check if prev button is disabled
+         if (!document.getElementById('tutorialPrev').disabled) {
+            showPreviousTutorialStep();
+         }
     }
-});
-
-// Auto-start the tutorial for first-time users (optional)
-function checkFirstTimeUser() {
-    if (!localStorage.getItem('tutorialShown')) {
-        // Delay startup to let the page fully load
-        setTimeout(function() {
-            startTutorial();
-            localStorage.setItem('tutorialShown', 'true');
-        }, 1000);
-    }
+     // Prevent arrow keys from scrolling the page during tutorial
+     if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        e.preventDefault();
+     }
 }
 
-// You can uncomment the line below to auto-start the tutorial for first-time users
-// checkFirstTimeUser();
+// Resize handler
+function handleTutorialResize() {
+    if (!tutorialActive) return;
+    // Just re-show the current step to reposition highlight and tooltip
+    showTutorialStep(currentTutorialStep);
+}
 
-// Console output helper - works with the tutorial
+// Add global listeners when tutorial starts
+function addGlobalListeners() {
+    document.addEventListener('keydown', handleTutorialKeydown);
+    window.addEventListener('resize', handleTutorialResize);
+}
+
+// --- Utility Functions ---
+
+// Console output helper (modified slightly)
 function logToConsole(message, type = 'info') {
     const jsOutput = document.getElementById('jsOutput');
+    // Check if the console container is visible (part of the advanced view)
+    const consoleVisible = jsOutput && window.getComputedStyle(jsOutput.parentElement).display !== 'none';
+
     if (!jsOutput) return;
-    
+
     const typeClasses = {
         'info': { color: '#4f94ef', icon: 'info-circle' },
         'success': { color: '#4CAF50', icon: 'check-circle' },
         'warning': { color: '#ff9800', icon: 'alert-triangle' },
         'error': { color: '#f44336', icon: 'alert-circle' }
     };
-    
     const style = typeClasses[type] || typeClasses.info;
-    
-    const iconSvg = {
+    const iconSvg = { /* ... keep existing SVG paths ... */
         'info-circle': '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>',
-        'check-circle': '<circle cx="12" cy="12" r="10"></circle><polyline points="9 12 11 14 15 10"></polyline>',
+        'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>', // Corrected check
         'alert-triangle': '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
         'alert-circle': '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'
     };
-    
-    jsOutput.innerHTML += `
-        <div style="margin-bottom: 8px; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.1); border-left: 4px solid ${style.color}; display: flex; align-items: flex-start;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${style.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; margin-top: 2px; flex-shrink: 0;">
-                ${iconSvg[style.icon]}
-            </svg>
-            <div>${message}</div>
-        </div>
+
+    const logEntry = document.createElement('div');
+    logEntry.style.cssText = `margin-bottom: 8px; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.1); border-left: 4px solid ${style.color}; display: flex; align-items: flex-start;`;
+    logEntry.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${style.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; margin-top: 2px; flex-shrink: 0;">
+            ${iconSvg[style.icon]}
+        </svg>
+        <div>${message}</div>
     `;
-    
-    // Auto-scroll to bottom
-    jsOutput.scrollTop = jsOutput.scrollHeight;
+    jsOutput.appendChild(logEntry);
+
+    // Auto-scroll to bottom only if the console is likely visible
+    if (consoleVisible) {
+       jsOutput.scrollTop = jsOutput.scrollHeight;
+    }
+
+    // If console is hidden, maybe show a small notification?
+    // Example: if (!consoleVisible && type === 'error') { showSmallNotification('Error logged in console'); }
 }
 
-// Export functions for global access
+// --- Auto-Start Logic (Optional) ---
+function checkFirstTimeUser() {
+    if (!localStorage.getItem('tutorialShown')) {
+        setTimeout(() => {
+            startTutorial();
+            localStorage.setItem('tutorialShown', 'true');
+        }, 1500); // Increased delay slightly
+    }
+}
+// Uncomment to enable auto-start for first visit:
+// checkFirstTimeUser();
+
+
+// --- Export functions needed globally ---
 window.startTutorial = startTutorial;
 window.endTutorial = endTutorial;
-window.playTutorialVideo = playTutorialVideo;
-window.logToConsole = logToConsole;
+// Ensure playTutorialVideo is accessible if called from outside (e.g., completion message button)
+// window.playTutorialVideo = playTutorialVideo;
+// Expose logToConsole if other scripts need it
+// window.logToConsole = logToConsole;
+
+// Add the global listeners when the script loads, but they only act when tutorialActive is true
+addGlobalListeners();

@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz, Flashcard, games</title>
+    <link rel="stylesheet" href="https://use.typekit.net/zei5man.css">
+    <script src="https://unpkg.com/compromise"></script>
+    <style>
+        :root {
+            /* Color variables */
+            --color-primary: #2622f7;
+            --color-primary-01: #4991e5;
+            --color-primary-02: #39bdd6;
+            --color-primary-03: #3bd4cb;
+            --color-primary-04: #BAD7F5;
+            --color-primary-05: #e4ecf4;
+            --color-white: #f6f6f6;
+            --color-black: #000000;
+            --color-dark: #121111;
+            --body-background-color: #10131c;
+            --text-primary: var(--color-white);
+            --text-secondary: #a7a6a6;
+            --editor-bg: #1c2333;
+            --header-bg: rgba(28, 35, 51, 0.8);
+            --border-color: #253351;
+            --border-color-1: #4991e5;
+            --btn-primary-bg: var(--color-primary-01);
+            --btn-primary-text: #e4ecf4;
+            --btn-hover-bg: var(--color-primary-02);
+            
+            /* Font variables */
+            --font-family-heading: "neue-haas-grotesk-display", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-family-body: "neue-haas-grotesk-text", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            
+            /* Animation variables */
+            --transition-fast: 0.15s ease;
+            --transition-medium: 0.3s ease;
+            --transition-slow: 0.5s ease;
+            --bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow: hidden;
+            background-color: var(--body-background-color);
+            color: var(--text-primary);
+            font-family: var(--font-family-body);
+            margin: 0;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background-color: var(--editor-bg);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--color-primary-01);
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) var(--editor-bg);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-primary);
+            font-family: var(--font-family-heading);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            padding: 1px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--header-bg);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        /* Logo */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo:hover {
+            transform: translateX(3px);
+        }
+
+        .logo svg {
+            transition: transform 0.3s ease, opacity 0.2s ease;
+        }
+
+        .logo:hover svg {
+            transform: scale(1.1) rotate(-8deg);
+        }
+
+        /* Actions container (search) */
+        .actions {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Form inputs */
+        .form-input {
+            width: 300px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--editor-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary-01);
+            transform: scale(1.01);
+            box-shadow: 0 0 0 2px rgba(73, 145, 229, 0.25);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--editor-bg);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            background-color: var(--btn-hover-bg);
+            color: var(--btn-primary-text);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background-color: var(--btn-primary-bg);
+            color: var(--btn-primary-text);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-02);
+        }
+
+        /* Offset content below header */
+        body > *:not(.header) {
+            margin-top: 50px;
+        }
+
+        /* Main layout - viewers and editors containers */
+        .viewers-container, .editors-container {
+            flex: 1;
+            height: calc(100vh - 50px);
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+            padding: 15px;
+        }
+
+        .viewers-container {
+            order: 1;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .editors-container {
+            order: 2;
+        }
+
+        /* Loading indicator */
+        .loading-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Error message */
+        .error-message {
+            background-color: rgba(255, 76, 76, 0.1);
+            border: 1px solid #ff4c4c;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #ff8080;
+        }
+
+        /* Main content */
+        #wiki-content {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #wiki-content h2 {
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+        }
+
+        #wiki-content p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        /* Flashcard Section */
+        .learning-section {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .learning-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .flashcard-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .flashcard-navigation .btn {
+            padding: 5px 10px;
+            font-size: 13px;
+        }
+
+        .flashcard-container {
+            perspective: 1000px;
+            max-width: 450px;
+            height: 200px;
+            margin: 0 auto;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--editor-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+        }
+
+        .flashcard-face span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .flashcard-face p {
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background-color: rgba(73, 145, 229, 0.1);
+        }
+
+        /* Quiz Section */
+        .quiz-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        #quizProgress {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .quiz-question {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background-color: var(--editor-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .quiz-option:hover {
+            background-color: rgba(73, 145, 229, 0.1);
+            border-color: var(--color-primary-01);
+        }
+
+        .quiz-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .quiz-option label {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .quiz-feedback {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .quiz-feedback.correct {
+            background-color: rgba(59, 212, 203, 0.1);
+            color: var(--color-primary-03);
+        }
+
+        .quiz-feedback.incorrect {
+            background-color: rgba(255, 76, 76, 0.1);
+            color: #ff8080;
+        }
+
+        /* Notes section in editors container */
+        .editors-container h4 {
+            margin-bottom: 10px;
+        }
+
+        .editors-container textarea {
+            width: 100%;
+            height: 200px;
+            background-color: var(--editor-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+            resize: vertical;
+        }
+
+        .editors-container textarea:focus {
+            outline: none;
+            border-color: var(--color-primary-01);
+        }
+
+        /* Cloze blank (for flashcards) */
+        .cloze-blank {
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 1px solid var(--color-primary-02);
+            color: var(--color-primary-02);
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blinkCursor {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--color-primary-01); }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+        
+        /* Apply animations */
+        .fade-in {
+            animation: fadeIn var(--transition-slow) forwards;
+        }
+        
+        .slide-up {
+            animation: slideUp var(--transition-medium) forwards;
+        }
+        
+        .slide-down {
+            animation: slideDown var(--transition-medium) forwards;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .viewers-container, .editors-container {
+                flex: none;
+                width: 100%;
+                height: calc(50vh - 25px);
+            }
+            
+            .viewers-container {
+                margin-top: 50px; 
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .editors-container {
+                margin-top: 0;
+                border-bottom: none;
+            }
+            
+            .form-input {
+                width: 200px;
+            }
+            
+            .flashcard-container {
+                max-width: 100%;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </svg>
+            <span>imagine a search</span>
+        </div>
+        <div class="actions">
+            <input type="search" id="searchInput" class="form-input" placeholder="Search Wikipedia...">
+            <button id="searchButton" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Search
+            </button>
+        </div>
+    </header>
+
+    <div class="viewers-container">
+        <div id="loadingIndicator" class="loading-indicator hidden">Loading... ✨</div>
+        <div id="errorMessage" class="error-message hidden"></div>
+        
+        <div id="mainContent" class="hidden">
+            <div id="wiki-content">
+                <!-- Wikipedia content will be loaded here -->
+            </div>
+            
+            <button id="readAloudButton" class="btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                </svg>
+                Read Aloud
+            </button>
+            
+            <div id="flashcard-section" class="learning-section hidden">
+                <h3>Flashcards</h3>
+                <div class="flashcard-navigation">
+                    <button id="prevFlashcard" class="btn">← Previous</button>
+                    <div id="flashcardCounter">Card 1 of 0</div>
+                    <button id="nextFlashcard" class="btn">Next →</button>
+                </div>
+                <div id="flashcardContainer" class="flashcard-container">
+                    <div id="flashcard" class="flashcard">
+                        <div class="flashcard-face flashcard-front">
+                            <span>Sentence with Blank (Click to Flip)</span>
+                            <p id="flashcardFrontContent"></p>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <span>Original Sentence</span>
+                            <p id="flashcardBackContent"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="quiz-section" class="learning-section hidden">
+                <h3>Quiz Time!</h3>
+                <div class="quiz-container">
+                    <div id="quizProgress">Question 1 of 0</div>
+                    <div id="quizQuestion" class="quiz-question">Loading question...</div>
+                    <div id="quizOptions" class="quiz-options">
+                        <!-- Quiz options will be generated here -->
+                    </div>
+                    <div id="quizFeedback" class="quiz-feedback hidden"></div>
+                    <div id="quizCompleteMessage" class="hidden">Quiz Complete! 🎉</div>
+                    <button id="submitQuiz" class="btn btn-primary">Submit Answer</button>
+                    <button id="nextQuizButton" class="btn hidden">Next Question →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="editors-container">
+        <h4>Notes / Extra Space</h4>
+        <p style="color: var(--text-secondary);">This area is defined by the layout CSS but not actively used by the Wikipedia tool in this example.</p>
+        <textarea placeholder="Your notes..."></textarea>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cache DOM elements
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessage = document.getElementById('errorMessage');
+            const mainContent = document.getElementById('mainContent');
+            const wikiContent = document.getElementById('wiki-content');
+            const readAloudButton = document.getElementById('readAloudButton');
+            
+            const flashcardSection = document.getElementById('flashcard-section');
+            const flashcardCounter = document.getElementById('flashcardCounter');
+            const prevFlashcardBtn = document.getElementById('prevFlashcard');
+            const nextFlashcardBtn = document.getElementById('nextFlashcard');
+            const flashcard = document.getElementById('flashcard');
+            const flashcardFrontContent = document.getElementById('flashcardFrontContent');
+            const flashcardBackContent = document.getElementById('flashcardBackContent');
+            
+            const quizSection = document.getElementById('quiz-section');
+            const quizProgress = document.getElementById('quizProgress');
+            const quizQuestion = document.getElementById('quizQuestion');
+            const quizOptions = document.getElementById('quizOptions');
+            const quizFeedback = document.getElementById('quizFeedback');
+            const quizCompleteMessage = document.getElementById('quizCompleteMessage');
+            const submitQuizBtn = document.getElementById('submitQuiz');
+            const nextQuizBtn = document.getElementById('nextQuizButton');
+            
+            // State variables
+            let currentWikiText = '';
+            let currentWikiTitle = '';
+            let flashcardData = [];
+            let currentFlashcardIndex = 0;
+            let quizData = [];
+            let currentQuizIndex = 0;
+            const MAX_RETRIES = 3;
+            
+            // Common stop words to exclude from NLP processing
+            const stopWords = new Set([
+                'a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+                'have', 'has', 'had', 'do', 'does', 'did', 'will', 'shall', 'should', 'would', 'may',
+                'might', 'must', 'can', 'could', 'of', 'for', 'with', 'about', 'against', 'between',
+                'into', 'through', 'during', 'before', 'after', 'above', 'below', 'from', 'up', 'down',
+                'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here',
+                'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more',
+                'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
+                'than', 'too', 'very', 'to', 'by', 'it', 'its', 'this', 'that', 'these', 'those', 'he', 
+                'she', 'they', 'we', 'you', 'I', 'me', 'him', 'her', 'them', 'us', 'my', 'your', 'his', 
+                'our', 'their', 'which', 'who', 'whom', 'whose', 'what', 'as', 'at'
+            ]);
+
+            // Event listeners
+            searchButton.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+            
+            readAloudButton.addEventListener('click', readAloud);
+            flashcard.addEventListener('click', () => {
+                flashcard.classList.toggle('flipped');
+            });
+            
+            prevFlashcardBtn.addEventListener('click', () => {
+                if (currentFlashcardIndex > 0) {
+                    currentFlashcardIndex--;
+                    displayFlashcard();
+                }
+            });
+            
+            nextFlashcardBtn.addEventListener('click', () => {
+                if (currentFlashcardIndex < flashcardData.length - 1) {
+                    currentFlashcardIndex++;
+                    displayFlashcard();
+                }
+            });
+            
+            submitQuizBtn.addEventListener('click', checkQuizAnswer);
+            nextQuizBtn.addEventListener('click', () => {
+                currentQuizIndex++;
+                
+                if (currentQuizIndex < quizData.length) {
+                    displayQuizQuestion();
+                } else {
+                    quizQuestion.textContent = '';
+                    quizOptions.innerHTML = '';
+                    quizProgress.textContent = '';
+                    submitQuizBtn.classList.add('hidden');
+                    nextQuizBtn.classList.add('hidden');
+                    quizCompleteMessage.classList.remove('hidden');
+                }
+            });
+
+            // Main search handler
+            function handleSearch() {
+                const query = searchInput.value.trim();
+                
+                if (!query) {
+                    showError('Please enter a search term.');
+                    return;
+                }
+                
+                // Reset the UI
+                resetUI();
+                showLoading();
+                
+                // Extract NLP keywords for better search results
+                const nlpKeywords = extractNlpKeywords(query);
+                console.log('NLP Keywords:', nlpKeywords);
+                
+                // Start with the first keyword or fall back to the original query
+                const initialSearchTerm = nlpKeywords.length > 0 ? nlpKeywords[0] : query;
+                
+                // Begin the search process, keeping track of attempted keywords
+                fetchWikipediaData(initialSearchTerm, query, nlpKeywords, 0, []);
+            }
+            
+            // Extract keywords using Compromise.js NLP
+            function extractNlpKeywords(text) {
+                // Clean input
+                const cleanText = text.trim().replace(/\s+/g, ' ');
+                if (!cleanText) return [];
+                
+                try {
+                    const doc = nlp(cleanText);
+                    
+                    // Extract different types of potential keywords
+                    const nounPhrases = doc.match('#NounPhase+').out('array');
+                    const properNouns = doc.match('#ProperNoun+').out('array');
+                    const nouns = doc.nouns().out('array');
+                    
+                    // Normalize phrases (lowercase, remove leading "the", "a", "an")
+                    const normalizePhrase = (phrase) => {
+                        return phrase
+                            .toLowerCase()
+                            .replace(/^(the|a|an) /i, '')
+                            .trim();
+                    };
+                    
+                    // Combine keywords, normalize, and filter out stop words
+                    const allKeywords = [...properNouns, ...nounPhrases, ...nouns]
+                        .map(normalizePhrase)
+                        .filter(word => {
+                            // Filter out stop words and short words
+                            return word.length > 2 && 
+                                   !stopWords.has(word) &&
+                                   !/^\d+$/.test(word); // Exclude pure numbers
+                        });
+                    
+                    // Remove duplicates
+                    const uniqueKeywords = [...new Set(allKeywords)];
+                    
+                    // Sort by priority (proper nouns first, then by length)
+                    return uniqueKeywords.sort((a, b) => {
+                        // Check if either is a proper noun (starts with capital in original)
+                        const aIsProper = properNouns.some(p => normalizePhrase(p) === a);
+                        const bIsProper = properNouns.some(p => normalizePhrase(p) === b);
+                        
+                        if (aIsProper && !bIsProper) return -1;
+                        if (!aIsProper && bIsProper) return 1;
+                        
+                        // Prioritize longer words, but penalize multi-word phrases slightly
+                        const aSpaces = (a.match(/ /g) || []).length;
+                        const bSpaces = (b.match(/ /g) || []).length;
+                        
+                        // Single words are preferred over phrases, longer words preferred over shorter
+                        return (b.length - bSpaces * 2) - (a.length - aSpaces * 2);
+                    });
+                } catch (error) {
+                    console.error('NLP error:', error);
+                    // Return original text if NLP processing fails
+                    return [text];
+                }
+            }
+            
+            // Fetch data from Wikipedia
+            function fetchWikipediaData(searchTerm, originalQuery, nlpKeywords, attemptIndex, attemptedWords) {
+                updateLoadingMessage(`Searching for "${searchTerm}"...`);
+                
+                // Add current search term to attempted words
+                attemptedWords.push(searchTerm.toLowerCase());
+                
+                // Wikipedia API endpoint (CORS-enabled)
+                const endpoint = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&explaintext=true&redirects=1&origin=*&titles=${encodeURIComponent(searchTerm)}`;
+                
+                fetch(endpoint)
+                    .then(response => response.json())
+                    .then(data => {
+                        const pages = data.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        
+                        // Check if page exists (pageId is not -1)
+                        if (pageId === '-1' || !pages[pageId].extract || pages[pageId].extract.trim() === '') {
+                            // No results found, try alternative keywords
+                            attemptIndex++;
+                            
+                            // If we have more keywords to try and haven't exceeded max retries
+                            if (attemptIndex < MAX_RETRIES && attemptIndex < nlpKeywords.length) {
+                                const nextKeyword = nlpKeywords[attemptIndex];
+                                
+                                // Skip if we've already tried this keyword
+                                if (nextKeyword && !attemptedWords.includes(nextKeyword.toLowerCase())) {
+                                    updateLoadingMessage(`No results for "${searchTerm}". Trying "${nextKeyword}"...`);
+                                    fetchWikipediaData(nextKeyword, originalQuery, nlpKeywords, attemptIndex, attemptedWords);
+                                } else {
+                                    // Try next keyword
+                                    fetchWikipediaData(originalQuery, originalQuery, nlpKeywords, MAX_RETRIES, attemptedWords);
+                                }
+                            } else {
+                                // We've exhausted our options, try the original query as a last resort
+                                if (!attemptedWords.includes(originalQuery.toLowerCase())) {
+                                    updateLoadingMessage(`Trying original query: "${originalQuery}"...`);
+                                    fetchWikipediaData(originalQuery, originalQuery, nlpKeywords, MAX_RETRIES, attemptedWords);
+                                } else {
+                                    // We've tried everything, show error
+                                    hideLoading();
+                                    showError(`No Wikipedia article found for "${originalQuery}". Please try a different search term.`);
+                                }
+                            }
+                            return;
+                        }
+                        
+                        // Success! We found a Wikipedia article
+                        const title = pages[pageId].title;
+                        const extract = pages[pageId].extract;
+                        
+                        // Store the wiki text and title
+                        currentWikiTitle = title;
+                        currentWikiText = extract;
+                        
+                        // Update the UI
+                        hideLoading();
+                        hideError();
+                        mainContent.classList.remove('hidden');
+                        
+                        // Display wiki content
+                        wikiContent.innerHTML = `<h2>${title}</h2>${extract.split('\n').map(p => `<p>${p}</p>`).join('')}`;
+                        
+                        // Generate flashcards and show the section
+                        flashcardData = generateFlashcards(extract);
+                        if (flashcardData.length > 0) {
+                            currentFlashcardIndex = 0;
+                            displayFlashcard();
+                            flashcardSection.classList.remove('hidden');
+                        }
+                        
+                        // Generate quiz questions and show the section
+                        quizData = generateQuizzes(extract);
+                        if (quizData.length > 0) {
+                            currentQuizIndex = 0;
+                            displayQuizQuestion();
+                            quizSection.classList.remove('hidden');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Wikipedia API error:', error);
+                        hideLoading();
+                        showError('Failed to fetch data from Wikipedia. Please try again later.');
+                    });
+            }
+            
+            // Generate flashcards from text
+            function generateFlashcards(text) {
+                const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+                const flashcards = [];
+                
+                // Process each sentence
+                for (const sentence of sentences) {
+                    // Focus on sentences of reasonable length (not too short or long)
+                    const trimmedSentence = sentence.trim();
+                    const wordCount = trimmedSentence.split(/\s+/).length;
+                    
+                    if (wordCount >= 6 && wordCount <= 30) {
+                        // Find words that are suitable for blanking out
+                        const words = trimmedSentence.split(/\s+/);
+                        const potentialBlankWords = words.filter(word => {
+                            // Remove punctuation for comparison
+                            const cleanWord = word.replace(/[.,;:!?()'"]/g, '').toLowerCase();
+                            return cleanWord.length > 3 && !stopWords.has(cleanWord);
+                        });
+                        
+                        if (potentialBlankWords.length > 0) {
+                            // Select a random word to blank out
+                            const wordToBlank = potentialBlankWords[Math.floor(Math.random() * potentialBlankWords.length)];
+                            
+                            // Create front (with blank) and back (complete) sentences
+                            const frontText = trimmedSentence.replace(new RegExp(`\\b${wordToBlank.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`), '<span class="cloze-blank">_________</span>');
+                            
+                            flashcards.push({
+                                front: frontText,
+                                back: trimmedSentence
+                            });
+                        }
+                    }
+                }
+                
+                // Limit to 10 flashcards max
+                return flashcards.slice(0, 10);
+            }
+            
+            // Generate quiz questions from text
+            function generateQuizzes(text) {
+                const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+                const quizzes = [];
+                
+                // Collect potential distractors (words for wrong answers)
+                let allWords = text.split(/\s+/);
+                let potentialDistractors = allWords
+                    .map(word => word.replace(/[.,;:!?()'"]/g, '').toLowerCase())
+                    .filter(word => word.length > 3 && !stopWords.has(word))
+                    .filter((word, index, self) => self.indexOf(word) === index); // unique words
+                
+                // Shuffle distractors for randomness
+                potentialDistractors = shuffleArray(potentialDistractors);
+                
+                // Process each sentence
+                for (const sentence of sentences) {
+                    // Focus on sentences of reasonable length
+                    const trimmedSentence = sentence.trim();
+                    const wordCount = trimmedSentence.split(/\s+/).length;
+                    
+                    if (wordCount >= 5 && wordCount <= 25) {
+                        // Find words suitable for quiz questions
+                        const words = trimmedSentence.split(/\s+/);
+                        const quizWords = words.filter(word => {
+                            const cleanWord = word.replace(/[.,;:!?()'"]/g, '').toLowerCase();
+                            return cleanWord.length > 4 && !stopWords.has(cleanWord);
+                        });
+                        
+                        if (quizWords.length > 0) {
+                            // Select a random word for the question
+                            const wordToBlank = quizWords[Math.floor(Math.random() * quizWords.length)];
+                            const cleanWord = wordToBlank.replace(/[.,;:!?()'"]/g, '').toLowerCase();
+                            
+                            // Create question text with blank
+                            const questionText = trimmedSentence.replace(new RegExp(`\\b${wordToBlank.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`), '_________');
+                            
+                            // Create options (1 correct + up to 3 distractors)
+                            const options = [cleanWord];
+                            
+                            // Add distractors but avoid duplicates and the correct answer
+                            for (const distractor of potentialDistractors) {
+                                if (options.length < 4 && 
+                                    distractor !== cleanWord && 
+                                    !options.includes(distractor)) {
+                                    options.push(distractor);
+                                }
+                            }
+                            
+                            // If we don't have enough distractors, skip this question
+                            if (options.length < 2) continue;
+                            
+                            // Shuffle options
+                            const shuffledOptions = shuffleArray([...options]);
+                            
+                            quizzes.push({
+                                questionText,
+                                options: shuffledOptions,
+                                correctAnswer: cleanWord
+                            });
+                            
+                            // Limit to 5 quiz questions max
+                            if (quizzes.length >= 5) break;
+                        }
+                    }
+                }
+                
+                return quizzes;
+            }
+            
+            // Display current flashcard
+            function displayFlashcard() {
+                if (flashcardData.length === 0) return;
+                
+                const currentCard = flashcardData[currentFlashcardIndex];
+                flashcardFrontContent.innerHTML = currentCard.front;
+                flashcardBackContent.textContent = currentCard.back;
+                flashcardCounter.textContent = `Card ${currentFlashcardIndex + 1} of ${flashcardData.length}`;
+                
+                // Reset the flip state
+                flashcard.classList.remove('flipped');
+                
+                // Enable/disable navigation buttons
+                prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
+                nextFlashcardBtn.disabled = currentFlashcardIndex === flashcardData.length - 1;
+            }
+            
+            // Display current quiz question
+            function displayQuizQuestion() {
+                if (quizData.length === 0) return;
+                
+                const currentQuiz = quizData[currentQuizIndex];
+                quizQuestion.textContent = currentQuiz.questionText;
+                quizProgress.textContent = `Question ${currentQuizIndex + 1} of ${quizData.length}`;
+                
+                // Create radio buttons for options
+                quizOptions.innerHTML = '';
+                currentQuiz.options.forEach((option, index) => {
+                    const optionId = `option-${index}`;
+                    
+                    const optionDiv = document.createElement('div');
+                    optionDiv.classList.add('quiz-option');
+                    
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = 'quiz-options';
+                    radioInput.id = optionId;
+                    radioInput.value = option;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = optionId;
+                    label.textContent = option;
+                    
+                    optionDiv.appendChild(radioInput);
+                    optionDiv.appendChild(label);
+                    quizOptions.appendChild(optionDiv);
+                });
+                
+                // Reset UI elements
+                quizFeedback.classList.add('hidden');
+                quizFeedback.textContent = '';
+                quizFeedback.className = 'quiz-feedback hidden';
+                
+                submitQuizBtn.classList.remove('hidden');
+                nextQuizBtn.classList.add('hidden');
+            }
+            
+            // Check the quiz answer
+            function checkQuizAnswer() {
+                const selectedOption = document.querySelector('input[name="quiz-options"]:checked');
+                
+                if (!selectedOption) {
+                    quizFeedback.textContent = 'Please select an answer.';
+                    quizFeedback.className = 'quiz-feedback';
+                    quizFeedback.classList.remove('hidden');
+                    return;
+                }
+                
+                const currentQuiz = quizData[currentQuizIndex];
+                const selectedAnswer = selectedOption.value;
+                const isCorrect = selectedAnswer === currentQuiz.correctAnswer;
+                
+                // Show feedback
+                quizFeedback.textContent = isCorrect ? 
+                    'Correct! Good job!' : 
+                    `Incorrect. The correct answer is: ${currentQuiz.correctAnswer}`;
+                
+                quizFeedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+                quizFeedback.classList.remove('hidden');
+                
+                // Disable all options
+                document.querySelectorAll('input[name="quiz-options"]').forEach(input => {
+                    input.disabled = true;
+                });
+                
+                // Highlight correct and incorrect answers
+                document.querySelectorAll('.quiz-option').forEach(option => {
+                    const input = option.querySelector('input');
+                    
+                    if (input.value === currentQuiz.correctAnswer) {
+                        option.style.borderColor = 'var(--color-primary-03)';
+                        option.style.backgroundColor = 'rgba(59, 212, 203, 0.1)';
+                    } else if (input.checked) {
+                        option.style.borderColor = '#ff4c4c';
+                        option.style.backgroundColor = 'rgba(255, 76, 76, 0.1)';
+                    }
+                });
+                
+                // Show next button if not the last question
+                submitQuizBtn.classList.add('hidden');
+                
+                if (currentQuizIndex < quizData.length - 1) {
+                    nextQuizBtn.classList.remove('hidden');
+                } else {
+                    quizCompleteMessage.classList.remove('hidden');
+                }
+            }
+            
+            // Text-to-speech functionality
+            function readAloud() {
+                // Check if the browser supports speech synthesis
+                if (!window.speechSynthesis) {
+                    showError('Your browser does not support text-to-speech functionality.');
+                    return;
+                }
+                
+                // Get the text to read (either from Wiki content or raw text)
+                const textToRead = currentWikiText || wikiContent.textContent;
+                
+                if (!textToRead) {
+                    showError('No content to read.');
+                    return;
+                }
+                
+                // If already speaking, stop
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    readAloudButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        </svg>
+                        Read Aloud
+                    `;
+                    return;
+                }
+                
+                // Create a new speech synthesis utterance
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                
+                // Set utterance properties
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                
+                // Update button to show speaking state
+                readAloudButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="2" width="4" height="20"/>
+                        <rect x="14" y="2" width="4" height="20"/>
+                    </svg>
+                    Stop Reading
+                `;
+                
+                // When done speaking, reset the button
+                utterance.onend = function() {
+                    readAloudButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        </svg>
+                        Read Aloud
+                    `;
+                };
+                
+                // Speak the text
+                window.speechSynthesis.speak(utterance);
+            }
+            
+            // UI Helper Functions
+            function showLoading() {
+                loadingIndicator.classList.remove('hidden');
+            }
+            
+            function hideLoading() {
+                loadingIndicator.classList.add('hidden');
+            }
+            
+            function updateLoadingMessage(message) {
+                loadingIndicator.textContent = message;
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+            }
+            
+            function hideError() {
+                errorMessage.classList.add('hidden');
+            }
+            
+            function resetUI() {
+                // Clear content
+                wikiContent.innerHTML = '';
+                currentWikiText = '';
+                currentWikiTitle = '';
+                
+                // Reset sections
+                mainContent.classList.add('hidden');
+                flashcardSection.classList.add('hidden');
+                quizSection.classList.add('hidden');
+                
+                // Reset flashcards
+                flashcardData = [];
+                currentFlashcardIndex = 0;
+                
+                // Reset quiz
+                quizData = [];
+                currentQuizIndex = 0;
+                quizFeedback.classList.add('hidden');
+                quizCompleteMessage.classList.add('hidden');
+                
+                // Reset error and loading
+                hideError();
+                hideLoading();
+                
+                // Stop any speech synthesis
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+            
+            // Utility function to shuffle an array
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            
+            // Initialize with a focus on the search input
+            searchInput.focus();
+        });
+    </script>
+</body>
+</html>
