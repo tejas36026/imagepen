@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Behavior Dashboard</title>
+
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .bg-animation {
+    position: absolute; /* ****** CHANGED: Position relative to parent ****** */
+    top: 0;
+    left: 0;
+    width: 100%;      /* ****** CHANGED: Fill the container width ****** */
+    height: 100%;     /* ****** CHANGED: Fill the container height ****** */
+    z-index: 0;         /* ****** ADDED: Stay behind editor content ****** */
+    /* Removed: left: 50%; width: 50%; position: fixed; */
+    /* Opacity is already handled inline, but you could move it here */
+    opacity: 0.1;
+}
+        /* Inline styles for quick setup - Move to dashboard.css for better organization */
+        :root {
+            --body-background-color: #10131c;
+            --editor-bg: #1c2333;
+            --header-bg: rgba(28, 35, 51, 0.8);
+            --text-primary: #f6f6f6;
+            --text-secondary: #a7a6a6;
+            --border-color: #253351;
+            --color-primary-01: #4991e5;
+            --color-error: #ff4d4f;
+        }
+/* Basic styles - can be expanded */
+:root {
+    --body-background-color: #10131c;
+    --editor-bg: #1c2333;
+    --header-bg: rgba(28, 35, 51, 0.8);
+    --text-primary: #f6f6f6;
+    --text-secondary: #a7a6a6;
+    --border-color: #253351;
+    --color-primary-01: #4991e5;
+    --color-error: #ff4d4f;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--body-background-color);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 20px;
+}
+
+h1, h2 {
+   color: var(--color-primary-01);
+   border-bottom: 1px solid var(--border-color);
+   padding-bottom: 10px;
+   margin-bottom: 20px;
+}
+
+.dashboard-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.metric-card {
+    background-color: var(--editor-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    min-height: 150px; /* Ensure cards have some minimum height */
+}
+
+.metric-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    font-weight: 500;
+}
+
+.metric-card .value {
+    font-size: 2.2em; /* Make main value larger */
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.1;
+}
+
+.metric-card .details {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px; /* Space between detail lines */
+    line-height: 1.4;
+}
+
+.metric-card .details span {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-left: 8px; /* Space between label and value */
+}
+
+.metric-card small {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    margin-top: auto; /* Pushes the small text to the bottom */
+    padding-top: 10px;
+}
+
+/* Chart Styles */
+.chart-container {
+     margin-top: 15px;
+     position: relative;
+     height: 250px; /* Increased height for charts */
+     width: 100%;
+}
+
+ canvas {
+    max-width: 100%;
+    max-height: 100%;
+ }
+
+/* Refresh Button */
+.refresh-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    background-color: var(--color-primary-01);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    z-index: 100;
+}
+ .refresh-button:hover {
+    opacity: 0.9;
+    background-color: #3a80d1; /* Slightly darker shade on hover */
+ }
+ .refresh-button:active {
+     transform: scale(0.98);
+ }
+
+/* Specific Card Adjustments (Example) */
+.metric-card[style*="grid-column"] { /* Target cards spanning columns */
+    min-height: 350px; /* More height for charts */
+}
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--body-background-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 {
+           color: var(--color-primary-01);
+           border-bottom: 1px solid var(--border-color);
+           padding-bottom: 10px;
+           margin-bottom: 20px;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background-color: var(--editor-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .metric-card .value, .metric-card .details div {
+            font-size: 1.8em;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+         .metric-card .details {
+            font-size: 1rem; /* Smaller font for details */
+            font-weight: normal;
+            color: var(--text-secondary); /* Lighter color */
+            margin-top: 10px;
+         }
+
+        .metric-card .details span {
+             font-weight: 500;
+             color: var(--text-primary);
+             margin-left: 5px;
+        }
+
+
+        .metric-card small {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-top: auto; /* Pushes the small text to the bottom */
+        }
+
+        .chart-container {
+             margin-top: 15px;
+             position: relative;
+             height: 200px; /* Adjust as needed */
+             width: 100%;
+        }
+
+         canvas {
+            max-width: 100%;
+            max-height: 100%;
+         }
+
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: var(--color-primary-01);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+         .refresh-button:hover {
+            opacity: 0.9;
+         }
+         /* Style for the new download button */
+.download-button {
+    position: fixed;
+    bottom: 20px;
+    right: 165px; /* Adjust this value so it sits nicely next to the refresh button */
+    padding: 10px 15px;
+    background-color: #28a745; /* Green color for download */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    z-index: 100; /* Ensure it's above other elements */
+}
+
+.download-button:hover {
+    opacity: 0.9;
+    background-color: #218838; /* Darker green on hover */
+}
+
+.download-button:active {
+    transform: scale(0.98); /* Slight shrink on click */
+}
+
+/* Optional: Adjust refresh button if needed to prevent overlap */
+.refresh-button {
+    right: 20px; /* Make sure this is still correct */
+}
+    </style>
+    
+</head>
+<body>
+    <svg class="bg-animation" width="100%" height="100%" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"
+        style="opacity: 0.4;">
+            <defs>
+                <!-- Enhanced Background Gradients -->
+                <radialGradient id="deepSpaceGradient" cx="50%" cy="50%" r="80%">
+                    <stop offset="0%" stop-color="#2622f7" stop-opacity="0.9"/>
+                    <stop offset="50%" stop-color="#0E1E3A" stop-opacity="0.85"/>
+                    <stop offset="100%" stop-color="#050A14" stop-opacity="1"/>
+                    <animate attributeName="r" values="80%;85%;80%" dur="20s" repeatCount="indefinite" />
+                </radialGradient>
+                
+                <linearGradient id="subtleNebula" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#39bdd6" stop-opacity="0.1" />
+                    <stop offset="50%" stop-color="#4991e5" stop-opacity="0.15" />
+                    <stop offset="100%" stop-color="#39bdd6" stop-opacity="0.1" />
+                    <animate attributeName="x1" values="0%;20%;0%" dur="30s" repeatCount="indefinite" />
+                    <animate attributeName="y1" values="0%;10%;0%" dur="25s" repeatCount="indefinite" />
+                </linearGradient>
+                
+                <radialGradient id="glowEffect" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#3bd4cb" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#3bd4cb" stop-opacity="0"/>
+                    <animate attributeName="cx" values="50%;60%;40%;50%" dur="30s" repeatCount="indefinite" />
+                    <animate attributeName="cy" values="50%;40%;60%;50%" dur="35s" repeatCount="indefinite" />
+                </radialGradient>
+        
+                <!-- Blueprint/Line Colors - Made thinner -->
+                <linearGradient id="blueprintLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4991e5" stop-opacity="0.6"/>
+                    <stop offset="50%" stop-color="#2622f7" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#4991e5" stop-opacity="0.6"/>
+                    <animate attributeName="x1" values="0%;20%;0%" dur="15s" repeatCount="indefinite" />
+                </linearGradient>
+                
+                <!-- Enhanced particle colors with animation -->
+                <radialGradient id="particleColor1" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#39bdd6" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#3bd4cb" stop-opacity="0.7"/>
+                    <animate attributeName="r" values="50%;70%;50%" dur="8s" repeatCount="indefinite" />
+                </radialGradient>
+                
+                <radialGradient id="particleColor2" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#4991e5" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#2622f7" stop-opacity="0.7"/>
+                    <animate attributeName="r" values="50%;65%;50%" dur="7s" repeatCount="indefinite" />
+                </radialGradient>
+                
+                <radialGradient id="particleColor3" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#BAD7F5" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#e4ecf4" stop-opacity="0.7"/>
+                    <animate attributeName="r" values="50%;60%;50%" dur="9s" repeatCount="indefinite" />
+                </radialGradient>
+                
+                <radialGradient id="dataPulseGradient" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#2622f7" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#4991e5" stop-opacity="0.7"/>
+                    <animate attributeName="r" values="50%;70%;50%" dur="3s" repeatCount="indefinite" />
+                </radialGradient>
+                
+                <!-- Random Line Glow Gradients -->
+                <linearGradient id="randomGlow1" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#2622f7" stop-opacity="0.1"/>
+                    <stop offset="50%" stop-color="#2622f7" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#2622f7" stop-opacity="0.1"/>
+                    <animate attributeName="x1" values="0%;100%;0%" dur="3s" repeatCount="indefinite" begin="0s"/>
+                </linearGradient>
+                
+                <linearGradient id="randomGlow2" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#39bdd6" stop-opacity="0.1"/>
+                    <stop offset="50%" stop-color="#39bdd6" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#39bdd6" stop-opacity="0.1"/>
+                    <animate attributeName="x1" values="0%;100%;0%" dur="4s" repeatCount="indefinite" begin="1s"/>
+                </linearGradient>
+                
+                <linearGradient id="randomGlow3" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4991e5" stop-opacity="0.1"/>
+                    <stop offset="50%" stop-color="#4991e5" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#4991e5" stop-opacity="0.1"/>
+                    <animate attributeName="x1" values="0%;100%;0%" dur="5s" repeatCount="indefinite" begin="2s"/>
+                </linearGradient>
+                
+                <linearGradient id="randomGlow4" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#3bd4cb" stop-opacity="0.1"/>
+                    <stop offset="50%" stop-color="#3bd4cb" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#3bd4cb" stop-opacity="0.1"/>
+                    <animate attributeName="x1" values="0%;100%;0%" dur="6s" repeatCount="indefinite" begin="3s"/>
+                </linearGradient>
+        
+                <!-- Enhanced Filters for Glow Effect -->
+                <filter id="particleGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                
+                <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1.5" />
+                </filter>
+                
+                <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feFlood flood-color="#2622f7" flood-opacity="0.8" result="glowColor"/>
+                    <feComposite in="glowColor" in2="blur" operator="in" result="softGlow"/>
+                    <feComposite in="SourceGraphic" in2="softGlow" operator="over"/>
+                </filter>
+                
+                <filter id="thinLineGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feFlood flood-color="#39bdd6" flood-opacity="0.7" result="glowColor"/>
+                    <feComposite in="glowColor" in2="blur" operator="in" result="softGlow"/>
+                    <feComposite in="SourceGraphic" in2="softGlow" operator="over"/>
+                </filter>
+                
+                <filter id="intenseGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="5" result="blur" />
+                    <feFlood flood-color="#2622f7" flood-opacity="1" result="glowColor"/>
+                    <feComposite in="glowColor" in2="blur" operator="in" result="softGlow"/>
+                    <feComposite in="SourceGraphic" in2="softGlow" operator="over"/>
+                </filter>
+        
+                <!-- Grid Pattern - Made thinner -->
+                <pattern id="blueprintGridDetailed" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+                    <path d="M 120 0 L 0 0 0 120" fill="none" stroke="#BAD7F5" stroke-width="0.3"/>
+                    <path d="M 30 0 V 120 M 60 0 V 120 M 90 0 V 120 M 0 30 H 120 M 0 60 H 120 M 0 90 H 120" fill="none" stroke="#BAD7F5" stroke-width="0.2"/>
+                    
+                    <!-- Animated dots at grid intersections -->
+                    <circle cx="0" cy="0" r="0.8" fill="#4991e5">
+                        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite" begin="-1s"/>
+                    </circle>
+                    <circle cx="60" cy="60" r="0.8" fill="#4991e5">
+                        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite" begin="-2s"/>
+                    </circle>
+                    <circle cx="120" cy="120" r="0.8" fill="#4991e5">
+                        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite" begin="-3s"/>
+                    </circle>
+                    <circle cx="0" cy="120" r="0.8" fill="#4991e5">
+                        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite" begin="-4s"/>
+                    </circle>
+                    <circle cx="120" cy="0" r="0.8" fill="#4991e5">
+                        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite" begin="-5s"/>
+                    </circle>
+                </pattern>
+        
+                <!-- Reusable Symbols - Thinner lines with glow -->
+                <symbol id="wireframeCube" viewBox="-50 -50 100 100">
+                    <path d="M-25,-25 L25,-25 L25,25 L-25,25 Z M-15,-15 L35,-15 L35,35 L-15,35 Z M-25,-25 L-15,-15 M25,-25 L35,-15 M25,25 L35,35 M-25,25 L-15,35" 
+                          fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="8s" repeatCount="indefinite"/>
+                    </path>
+                </symbol>
+                
+                <symbol id="wireframePyramid" viewBox="-50 -50 100 100">
+                    <path d="M0,-30 L-25,25 L25,25 Z M0,-30 L0,25 M-25,25 L25,25" 
+                          fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="10s" repeatCount="indefinite"/>
+                    </path>
+                </symbol>
+                
+                <symbol id="wireframeSphere" viewBox="-50 -50 100 100">
+                    <circle cx="0" cy="0" r="30" fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="9s" repeatCount="indefinite"/>
+                    </circle>
+                    <ellipse cx="0" cy="0" rx="30" ry="15" fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.3" filter="url(#thinLineGlow)">
+                        <animate attributeName="transform" attributeType="XML" type="rotate" 
+                                 from="0 0 0" to="360 0 0" dur="20s" repeatCount="indefinite"/>
+                    </ellipse>
+                    <ellipse cx="0" cy="0" rx="30" ry="15" fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.3" filter="url(#thinLineGlow)">
+                        <animate attributeName="transform" attributeType="XML" type="rotate" 
+                                 from="90 0 0" to="450 0 0" dur="25s" repeatCount="indefinite"/>
+                    </ellipse>
+                </symbol>
+                
+                <symbol id="dnaSegment" viewBox="0 0 20 100">
+                    <path d="M 10 0 Q 0 10, 10 20 T 10 40 Q 0 50, 10 60 T 10 80 Q 0 90, 10 100" fill="none" stroke="#39bdd6" stroke-width="0.5" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="8s" repeatCount="indefinite"/>
+                    </path>
+                    <path d="M 10 0 Q 20 10, 10 20 T 10 40 Q 20 50, 10 60 T 10 80 Q 20 90, 10 100" fill="none" stroke="#3bd4cb" stroke-width="0.5" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="8s" repeatCount="indefinite" begin="-4s"/>
+                    </path>
+                    <!-- Animated base pairs - thinner -->
+                    <line x1="5" y1="10" x2="15" y2="10" stroke="#BAD7F5" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite" begin="-0.5s"/>
+                    </line>
+                    <line x1="5" y1="30" x2="15" y2="30" stroke="#BAD7F5" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite" begin="-1s"/>
+                    </line>
+                    <line x1="5" y1="50" x2="15" y2="50" stroke="#BAD7F5" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite" begin="-1.5s"/>
+                    </line>
+                    <line x1="5" y1="70" x2="15" y2="70" stroke="#BAD7F5" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite" begin="-2s"/>
+                    </line>
+                    <line x1="5" y1="90" x2="15" y2="90" stroke="#BAD7F5" stroke-width="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="4s" repeatCount="indefinite" begin="-2.5s"/>
+                    </line>
+                </symbol>
+                
+                <symbol id="circuitNode" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="5" fill="#4991e5" opacity="0.7" filter="url(#particleGlow)">
+                        <animate attributeName="r" values="5;7;5" dur="3s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="10" cy="10" r="2" fill="#39bdd6" filter="url(#particleGlow)"/>
+                </symbol>
+        
+                <!-- Shared Animation Styles -->
+                <style>
+                    .drawing-line { stroke-dasharray: 2000; stroke-dashoffset: 2000; }
+                    .fading-element { animation: fadeCycle 25s infinite ease-in-out; }
+                    @keyframes fadeCycle {
+                        0%, 100% { opacity: 0; }
+                        10%, 90% { opacity: 0.6; }
+                    }
+                    .slow-drift { animation: slowDrift 80s infinite linear alternate; }
+                    @keyframes slowDrift {
+                        from { transform: translate(0px, 0px); }
+                        to { transform: translate(20px, -15px); }
+                    }
+                    .medium-drift { animation: mediumDrift 50s infinite linear alternate; }
+                    @keyframes mediumDrift {
+                        from { transform: translate(0px, 0px); }
+                        to { transform: translate(-25px, 20px); }
+                    }
+                    .fast-drift { animation: fastDrift 30s infinite linear alternate; }
+                    @keyframes fastDrift {
+                        from { transform: translate(0px, 0px); }
+                        to { transform: translate(35px, -30px); }
+                    }
+                    .pulse-rotate { animation: pulseRotate 15s infinite linear; }
+                    @keyframes pulseRotate {
+                        0% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+                        50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
+                        100% { transform: scale(1) rotate(360deg); opacity: 0.7; }
+                    }
+                    .float-around { animation: floatAround 20s infinite ease-in-out; }
+                    @keyframes floatAround {
+                        0%, 100% { transform: translate(0, 0); }
+                        25% { transform: translate(15px, -15px); }
+                        50% { transform: translate(-5px, 20px); }
+                        75% { transform: translate(-20px, -10px); }
+                    }
+                    
+                    /* Random flash animations for lines */
+                    .flash-line1 { animation: flashLine 4s infinite ease-in-out; animation-delay: -1s; }
+                    .flash-line2 { animation: flashLine 6s infinite ease-in-out; animation-delay: -2s; }
+                    .flash-line3 { animation: flashLine 8s infinite ease-in-out; animation-delay: -3s; }
+                    .flash-line4 { animation: flashLine 10s infinite ease-in-out; animation-delay: -4s; }
+                    @keyframes flashLine {
+                        0%, 85%, 100% { opacity: 0.2; filter: url(#thinLineGlow); }
+                        90%, 95% { opacity: 1; filter: url(#intenseGlow); }
+                    }
+                    
+                    /* Electron particle movement */
+                    .electron-particle {
+                  
+                        fill: #39bdd6;
+                        filter: url(#particleGlow);
+                        opacity: 0;
+                    }
+                    
+                    /* Mouse follow effect styles will be added via JavaScript */
+                    #mouseFollowLayer {
+                        pointer-events: none;
+                    }
+                </style>
+            </defs>
+        
+            <!-- Layer 1: Deep Background with animated gradients -->
+            <rect width="100%" height="100%" fill="url(#deepSpaceGradient)">
+                <animate attributeName="opacity" values="1;0.9;1" dur="30s" repeatCount="indefinite"/>
+            </rect>
+            
+            <rect width="100%" height="100%" fill="url(#subtleNebula)" opacity="0.7">
+                <animateTransform attributeName="transform" type="rotate" from="0 720 450" to="360 720 450" dur="120s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="60s" repeatCount="indefinite"/>
+            </rect>
+            
+            <!-- Layer 1.5: Animated stellar background -->
+            <g class="slow-drift">
+                <!-- Add more stars with different animations -->
+                <g opacity="0.7">
+                    <circle cx="150" cy="100" r="0.9" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="5s" repeatCount="indefinite" begin="-1s"/>
+                    </circle>
+                    <circle cx="1200" cy="800" r="1.2" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="7s" repeatCount="indefinite" begin="-3s"/>
+                    </circle>
+                    <circle cx="800" cy="50" r="0.8" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="6s" repeatCount="indefinite" begin="-2s"/>
+                    </circle>
+                    <circle cx="400" cy="850" r="1" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite" begin="-1.5s"/>
+                    </circle>
+                    <circle cx="1350" cy="400" r="0.9" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="8s" repeatCount="indefinite" begin="-4s"/>
+                    </circle>
+                    <circle cx="250" cy="300" r="1.1" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="6s" repeatCount="indefinite" begin="-2.5s"/>
+                    </circle>
+                    <circle cx="980" cy="720" r="0.8" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="7s" repeatCount="indefinite" begin="-3.5s"/>
+                    </circle>
+                    <circle cx="780" cy="250" r="1" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="5s" repeatCount="indefinite" begin="-1.8s"/>
+                    </circle>
+                    <circle cx="500" cy="600" r="0.9" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="6s" repeatCount="indefinite" begin="-2.2s"/>
+                    </circle>
+                    <circle cx="1150" cy="350" r="1.1" fill="#f6f6f6">
+                        <animate attributeName="opacity" values="0.7;1;0.7" dur="8s" repeatCount="indefinite" begin="-4.2s"/>
+                    </circle>
+                </g>
+            </g>
+            
+            <!-- Layer 1.8: Distant cosmic nebulae with enhanced glow -->
+            <g opacity="0.2" class="medium-drift">
+                <ellipse cx="300" cy="200" rx="280" ry="180" fill="url(#glowEffect)" filter="url(#particleGlow)">
+                    <animate attributeName="opacity" values="0.2;0.4;0.2" dur="30s" repeatCount="indefinite"/>
+                    <animateTransform attributeName="transform" type="rotate" from="0 300 200" to="360 300 200" dur="180s" repeatCount="indefinite"/>
+                </ellipse>
+                
+                <ellipse cx="1100" cy="750" rx="320" ry="200" fill="url(#glowEffect)" filter="url(#particleGlow)">
+                    <animate attributeName="opacity" values="0.2;0.3;0.2" dur="35s" repeatCount="indefinite"/>
+                    <animateTransform attributeName="transform" type="rotate" from="0 1100 750" to="-360 1100 750" dur="200s" repeatCount="indefinite"/>
+                </ellipse>
+            </g>
+        
+            <!-- Layer 2: Structural Layer (Grid & Blueprints) with enhanced animation and glow -->
+            <rect width="100%" height="100%" fill="url(#blueprintGridDetailed)" opacity="0.7">
+                <animate attributeName="opacity" values="0.7;0.5;0.7" dur="40s" repeatCount="indefinite"/>
+            </rect>
+            
+            <!-- Random glowing lines with flash effect -->
+            <g>
+                <!-- Horizontal random glowing lines -->
+                <line x1="100" y1="150" x2="500" y2="150" stroke="url(#randomGlow1)" stroke-width="0.5" class="flash-line1"/>
+                <line x1="700" y1="200" x2="1200" y2="200" stroke="url(#randomGlow2)" stroke-width="0.5" class="flash-line2"/>
+                <line x1="200" y1="400" x2="600" y2="400" stroke="url(#randomGlow3)" stroke-width="0.5" class="flash-line3"/>
+                <line x1="800" y1="600" x2="1300" y2="600" stroke="url(#randomGlow4)" stroke-width="0.5" class="flash-line4"/>
+                <line x1="300" y1="800" x2="900" y2="800" stroke="url(#randomGlow1)" stroke-width="0.5" class="flash-line1"/>
+                
+                <!-- Vertical random glowing lines -->
+                <line x1="200" y1="100" x2="200" y2="500" stroke="url(#randomGlow2)" stroke-width="0.5" class="flash-line3"/>
+                <line x1="600" y1="300" x2="600" y2="700" stroke="url(#randomGlow3)" stroke-width="0.5" class="flash-line4"/>
+                <line x1="1000" y1="200" x2="1000" y2="800" stroke="url(#randomGlow4)" stroke-width="0.5" class="flash-line2"/>
+                <line x1="1300" y1="100" x2="1300" y2="400" stroke="url(#randomGlow1)" stroke-width="0.5" class="flash-line1"/>
+                
+                <!-- Diagonal random glowing lines -->
+                <line x1="100" y1="100" x2="400" y2="300" stroke="url(#randomGlow3)" stroke-width="0.5" class="flash-line2"/>
+                <line x1="1000" y1="100" x2="1300" y2="300" stroke="url(#randomGlow4)" stroke-width="0.5" class="flash-line3"/>
+                <line x1="100" y1="700" x2="300" y2="900" stroke="url(#randomGlow1)" stroke-width="0.5" class="flash-line4"/>
+                <line x1="1100" y1="700" x2="1300" y2="900" stroke="url(#randomGlow2)" stroke-width="0.5" class="flash-line1"/>
+            </g>
+            
+            <g stroke="url(#blueprintLineGradient)" stroke-width="0.4" fill="none" filter="url(#thinLineGlow)">
+                <!-- Animated drawing/fading shapes with enhanced timing -->
+                <path d="M 200,200 H 500 V 500 H 200 Z" class="drawing-line" filter="url(#neonGlow)">
+                    <animate attributeName="stroke-dashoffset" values="2000; 0; 0; 0; 2000" dur="25s" repeatCount="indefinite" begin="-5s"/>
+                    <animate attributeName="opacity" values="0; 0.9; 0.9; 0; 0" dur="25s" repeatCount="indefinite" begin="-5s" keyTimes="0; 0.2; 0.7; 0.9; 1"/>
+                </path>
+                
+                <circle cx="1100" cy="250" r="150" class="drawing-line" filter="url(#neonGlow)">
+                    <animate attributeName="stroke-dashoffset" values="2000; 0; 0; 0; 2000" dur="30s" repeatCount="indefinite" begin="-12s"/>
+                    <animate attributeName="opacity" values="0; 0.8; 0.8; 0; 0" dur="30s" repeatCount="indefinite" begin="-12s" keyTimes="0; 0.15; 0.7; 0.9; 1"/>
+                </circle>
+                
+                <path d="M 100,700 Q 250,600 400,700 T 700,700" class="drawing-line" filter="url(#neonGlow)">
+                    <animate attributeName="stroke-dashoffset" values="2000; 0; 0; 0; 2000" dur="28s" repeatCount="indefinite" begin="-2s"/>
+                    <animate attributeName="opacity" values="0; 0.85; 0.85; 0; 0" dur="28s" repeatCount="indefinite" begin="-2s" keyTimes="0; 0.2; 0.7; 0.9; 1"/>
+                </path>
+                
+                <!-- New path - hexagon -->
+                <path d="M 1000,400 L 1060,370 L 1120,400 L 1120,460 L 1060,490 L 1000,460 Z" class="drawing-line" filter="url(#neonGlow)">
+                    <animate attributeName="stroke-dashoffset" values="2000; 0; 0; 0; 2000" dur="32s" repeatCount="indefinite" begin="-18s"/>
+                    <animate attributeName="opacity" values="0; 0.9; 0.9; 0; 0" dur="32s" repeatCount="indefinite" begin="-18s" keyTimes="0; 0.2; 0.7; 0.9; 1"/>
+                </path>
+                
+                <!-- New path - triangle -->
+                <path d="M 350,150 L 450,300 L 250,300 Z" class="drawing-line" filter="url(#neonGlow)">
+                    <animate attributeName="stroke-dashoffset" values="2000; 0; 0; 0; 2000" dur="22s" repeatCount="indefinite" begin="-8s"/>
+                    <animate attributeName="opacity" values="0; 0.85; 0.85; 0; 0" dur="22s" repeatCount="indefinite" begin="-8s" keyTimes="0; 0.2; 0.7; 0.9; 1"/>
+                </path>
+        
+                <!-- Enhanced rotating wireframes with more shapes -->
+                <use href="#wireframeCube" x="300" y="650" width="70" height="70">
+                    <animateTransform attributeName="transform" type="rotate" from="0 335 685" to="360 335 685" dur="40s" repeatCount="indefinite" begin="-8s"/>
+                    <animate attributeName="opacity" values="0.3; 0.9; 0.3" dur="20s" repeatCount="indefinite"/>
+                </use>
+                
+                <use href="#wireframePyramid" x="800" y="300" width="75" height="75">
+                    <animateTransform attributeName="transform" type="rotate" from="0 837.5 337.5" to="360 837.5 337.5" dur="45s" repeatCount="indefinite" begin="-12s"/>
+                    <animate attributeName="opacity" values="0.4; 0.8; 0.4" dur="22s" repeatCount="indefinite"/>
+                </use>
+                
+                <use href="#wireframeSphere" x="1250" y="550" width="90" height="90">
+                    <animateTransform attributeName="transform" type="rotate" from="0 1295 595" to="-360 1295 595" dur="50s" repeatCount="indefinite" begin="-25s"/>
+                    <animate attributeName="opacity" values="0.3; 0.7; 0.3" dur="25s" repeatCount="indefinite"/>
+                </use>
+                
+                <use href="#wireframeCube" x="600" y="150" width="60" height="60">
+                    <animateTransform attributeName="transform" type="rotate" from="0 630 180" to="-360 630 180" dur="35s" repeatCount="indefinite" begin="-15s"/>
+                    <animate attributeName="opacity" values="0.3; 0.8; 0.3" dur="18s" repeatCount="indefinite"/>
+                </use>
+            </g>
+        
+            <!-- Layer 3: Enhanced Dynamic Layer (Data Flow & Bio) with thinner lines and glow -->
+            <g>
+                <!-- Enhanced Circuit Paths with more complex designs -->
+                <path id="dataPath1" d="M50,50 H 250 V 250 H 450 V 100 H 650 V 250 H 850" fill="none" stroke="#2622f7" stroke-width="0.5" opacity="0.6" filter="url(#thinLineGlow)"/>
+                
+                <path id="dataPath2" d="M1390,850 H 1190 V 650 H 990 V 800 H 790 V 650 H 590" fill="none" stroke="#2622f7" stroke-width="0.5" opacity="0.5" filter="url(#thinLineGlow)"/>
+                
+                <path id="dataPath3" d="M 50, 400 Q 250, 300, 450, 400 T 850, 400 Q 1050, 500, 1250, 400" fill="none" stroke="#4991e5" stroke-width="0.5" opacity="0.7" filter="url(#thinLineGlow)"/>
+                
+                <path id="dataPath4" d="M 50, 600 C 200, 500, 300, 700, 450, 600 S 700, 500, 850, 600 S 1100, 700, 1250, 600" fill="none" stroke="#39bdd6" stroke-width="0.5" opacity="0.6" filter="url(#thinLineGlow)"/>
+                
+                <path id="dataPath5" d="M 1300, 200 Q 1100, 150, 900, 200 T 500, 200 Q 300, 250, 100, 200" fill="none" stroke="#3bd4cb" stroke-width="0.5" opacity="0.5" filter="url(#thinLineGlow)"/>
+        
+                <!-- Circuit Nodes at intersections -->
+                <use href="#circuitNode" x="245" y="245" width="20" height="20"/>
+                <use href="#circuitNode" x="445" y="95" width="20" height="20"/>
+                <use href="#circuitNode" x="645" y="245" width="20" height="20"/>
+                
+                <use href="#circuitNode" x="985" y="795" width="20" height="20"/>
+                <use href="#circuitNode" x="785" y="645" width="20" height="20"/>
+                
+                <use href="#circuitNode" x="450" y="395" width="20" height="20"/>
+                <use href="#circuitNode" x="850" y="395" width="20" height="20"/>
+                
+                <use href="#circuitNode" x="450" y="595" width="20" height="20"/>
+                <use href="#circuitNode" x="850" y="595" width="20" height="20"/>
+                
+                <use href="#circuitNode" x="900" y="195" width="20" height="20"/>
+                <use href="#circuitNode" x="500" y="195" width="20" height="20"/>
+        
+                <!-- Enhanced Data Pulses with more variety and animation -->
+                <circle r="4" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="8s" repeatCount="indefinite" begin="-1s">
+                        <mpath href="#dataPath1"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="4; 6; 4" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3.5" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="8s" repeatCount="indefinite" begin="-5s">
+                        <mpath href="#dataPath1"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3.5; 5.5; 3.5" dur="1.2s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="10s" repeatCount="indefinite" begin="-6s">
+                        <mpath href="#dataPath2"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3; 5; 3" dur="1.4s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3.5" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="10s" repeatCount="indefinite" begin="-1s">
+                        <mpath href="#dataPath2"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3.5; 5.5; 3.5" dur="1.3s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="4" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="9s" repeatCount="indefinite" begin="-3s">
+                        <mpath href="#dataPath3"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="4; 6; 4" dur="0.9s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="9s" repeatCount="indefinite" begin="-7s">
+                        <mpath href="#dataPath3"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3; 5; 3" dur="1.1s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3.5" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="12s" repeatCount="indefinite" begin="-2s">
+                        <mpath href="#dataPath4"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3.5; 5.5; 3.5" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="4" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="12s" repeatCount="indefinite" begin="-8s">
+                        <mpath href="#dataPath4"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="4; 6; 4" dur="1.2s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="11s" repeatCount="indefinite" begin="-4s">
+                        <mpath href="#dataPath5"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3; 5; 3" dur="1.3s" repeatCount="indefinite"/>
+                </circle>
+                
+                <circle r="3.5" fill="url(#dataPulseGradient)" filter="url(#particleGlow)">
+                    <animateMotion dur="11s" repeatCount="indefinite" begin="-9s">
+                        <mpath href="#dataPath5"/>
+                    </animateMotion>
+                    <animate attributeName="r" values="3.5; 5.5; 3.5" dur="1.1s" repeatCount="indefinite"/>
+                </circle>
+        
+                <!-- Enhanced DNA Helix with more animation and glow -->
+                <g transform="translate(900 500) rotate(-20)" class="fading-element" style="animation-delay: -10s;" filter="url(#thinLineGlow)">
+                    <use href="#dnaSegment" x="0" y="0" width="18" height="180">
+                        <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 0 -15; 0 15; 0 0" dur="12s" repeatCount="indefinite"/>
+                        <animateTransform attributeName="transform" type="rotate" additive="sum" values="0; 10; -10; 0" dur="15s" repeatCount="indefinite"/>
+                    </use>
+                </g>
+                
+                <g transform="translate(150 450) rotate(15)" class="fading-element" style="animation-delay: -2s;" filter="url(#thinLineGlow)">
+                    <use href="#dnaSegment" x="0" y="0" width="15" height="150">
+                        <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 8 8; -8 -8; 0 0" dur="14s" repeatCount="indefinite"/>
+                        <animateTransform attributeName="transform" type="rotate" additive="sum" values="0; -12; 12; 0" dur="17s" repeatCount="indefinite"/>
+                    </use>
+                </g>
+                
+                <g transform="translate(500 700) rotate(-10)" class="fading-element" style="animation-delay: -6s;" filter="url(#thinLineGlow)">
+                    <use href="#dnaSegment" x="0" y="0" width="16" height="160">
+                        <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; -10 10; 10 -10; 0 0" dur="13s" repeatCount="indefinite"/>
+                        <animateTransform attributeName="transform" type="rotate" additive="sum" values="0; 15; -15; 0" dur="16s" repeatCount="indefinite"/>
+                    </use>
+                </g>
+                
+                <g transform="translate(1300 250) rotate(25)" class="fading-element" style="animation-delay: -8s;" filter="url(#thinLineGlow)">
+                    <use href="#dnaSegment" x="0" y="0" width="14" height="140">
+                        <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 12 -12; -12 12; 0 0" dur="15s" repeatCount="indefinite"/>
+                        <animateTransform attributeName="transform" type="rotate" additive="sum" values="0; -8; 8; 0" dur="18s" repeatCount="indefinite"/>
+                    </use>
+                </g>
+            </g>
+        
+            <!-- Layer 4: Enhanced Ambient Particles with more variety and glow -->
+            <g filter="url(#particleGlow)">
+                <!-- Particle Group 1: Slow floaters with complex paths -->
+                <g class="slow-drift">
+                    <circle cx="100" cy="200" r="3" fill="url(#particleColor1)" opacity="0.8">
+                        <animate attributeName="cx" values="100;180;60;140;100" dur="45s" repeatCount="indefinite" begin="-3s"/>
+                        <animate attributeName="cy" values="200;160;240;180;200" dur="50s" repeatCount="indefinite" begin="-8s"/>
+                        <animate attributeName="r" values="3;4;2.5;3.5;3" dur="20s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.8;1;0.6;1;0.8" dur="15s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="1300" cy="700" r="4" fill="url(#particleColor2)" opacity="0.7">
+                        <animate attributeName="cx" values="1300;1230;1350;1270;1300" dur="60s" repeatCount="indefinite" begin="-15s"/>
+                        <animate attributeName="cy" values="700;760;660;730;700" dur="55s" repeatCount="indefinite" begin="-2s"/>
+                        <animate attributeName="r" values="4;5;3;4.5;4" dur="25s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.7;0.9;0.5;0.9;0.7" dur="20s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="700" cy="450" r="2.5" fill="url(#particleColor3)" opacity="0.9">
+                        <animate attributeName="cx" values="700;750;670;720;700" dur="38s" repeatCount="indefinite" begin="-22s"/>
+                        <animate attributeName="cy" values="450;490;420;470;450" dur="42s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="r" values="2.5;3.5;2;3;2.5" dur="15s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.9;1;0.7;1;0.9" dur="12s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+                
+                <!-- Particle Group 2: Medium speed with more erratic movements -->
+                <g class="medium-drift">
+                    <circle cx="500" cy="800" r="3.5" fill="url(#particleColor1)" opacity="0.6">
+                        <animate attributeName="cx" values="500;420;580;480;500" dur="40s" repeatCount="indefinite" begin="-10s"/>
+                        <animate attributeName="cy" values="800;860;750;830;800" dur="35s" repeatCount="indefinite" begin="-18s"/>
+                        <animate attributeName="r" values="3.5;4.5;2.5;4;3.5" dur="18s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.6;0.9;0.4;0.9;0.6" dur="15s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="1000" cy="100" r="3" fill="url(#particleColor2)" opacity="0.8">
+                        <animate attributeName="cx" values="1000;1080;960;1030;1000" dur="32s" repeatCount="indefinite" begin="-1s"/>
+                        <animate attributeName="cy" values="100;140;70;120;100" dur="28s" repeatCount="indefinite" begin="-14s"/>
+                        <animate attributeName="r" values="3;4;2.5;3.5;3" dur="16s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.8;1;0.6;1;0.8" dur="12s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="300" cy="600" r="2.5" fill="url(#particleColor3)" opacity="0.7">
+                        <animate attributeName="cx" values="300;350;270;320;300" dur="36s" repeatCount="indefinite" begin="-7s"/>
+                        <animate attributeName="cy" values="600;640;580;620;600" dur="30s" repeatCount="indefinite" begin="-21s"/>
+                        <animate attributeName="r" values="2.5;3.5;2;3;2.5" dur="14s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.7;1;0.5;1;0.7" dur="10s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+                
+                <!-- Particle Group 3: Fast movers with pulse effect -->
+                <g class="fast-drift">
+                    <circle cx="850" cy="250" r="2" fill="url(#particleColor1)" opacity="0.9">
+                        <animate attributeName="cx" values="850;890;820;870;850" dur="20s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="cy" values="250;220;270;240;250" dur="18s" repeatCount="indefinite" begin="-12s"/>
+                        <animate attributeName="r" values="2;3;1.5;2.5;2" dur="8s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.9;1;0.7;1;0.9" dur="6s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="1200" cy="500" r="2.5" fill="url(#particleColor2)" opacity="0.8">
+                        <animate attributeName="cx" values="1200;1240;1170;1220;1200" dur="16s" repeatCount="indefinite" begin="-3s"/>
+                        <animate attributeName="cy" values="500;460;530;490;500" dur="15s" repeatCount="indefinite" begin="-9s"/>
+                        <animate attributeName="r" values="2.5;3.5;2;3;2.5" dur="10s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.8;1;0.6;1;0.8" dur="7s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="400" cy="350" r="3" fill="url(#particleColor3)" opacity="0.7">
+                        <animate attributeName="cx" values="400;430;380;410;400" dur="18s" repeatCount="indefinite" begin="-6s"/>
+                        <animate attributeName="cy" values="350;320;370;340;350" dur="17s" repeatCount="indefinite" begin="-14s"/>
+                        <animate attributeName="r" values="3;4;2;3.5;3" dur="12s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.7;0.9;0.5;0.9;0.7" dur="8s" repeatCount="indefinite"/>
+                    </circle>
+                </g>
+                
+                <!-- Floating energy orbs with enhanced glow effect -->
+                <g class="float-around">
+                    <circle cx="600" cy="300" r="8" fill="url(#particleColor1)" opacity="0.2" filter="url(#neonGlow)">
+                        <animate attributeName="r" values="8;12;8" dur="8s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.2;0.4;0.2" dur="8s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="900" cy="650" r="10" fill="url(#particleColor2)" opacity="0.15" filter="url(#neonGlow)">
+                        <animate attributeName="r" values="10;15;10" dur="10s" repeatCount="indefinite" begin="-3s"/>
+                        <animate attributeName="opacity" values="0.15;0.3;0.15" dur="10s" repeatCount="indefinite" begin="-3s"/>
+                    </circle>
+                    
+                    <circle cx="250" cy="500" r="7" fill="url(#particleColor3)" opacity="0.25" filter="url(#neonGlow)">
+                        <animate attributeName="r" values="7;11;7" dur="9s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="opacity" values="0.25;0.35;0.25" dur="9s" repeatCount="indefinite" begin="-5s"/>
+                    </circle>
+                    
+                    <circle cx="1100" cy="200" r="9" fill="url(#particleColor1)" opacity="0.2" filter="url(#neonGlow)">
+                        <animate attributeName="r" values="9;14;9" dur="11s" repeatCount="indefinite" begin="-7s"/>
+                        <animate attributeName="opacity" values="0.2;0.35;0.2" dur="11s" repeatCount="indefinite" begin="-7s"/>
+                    </circle>
+                </g>
+                
+                <!-- Pulsing rings that expand and fade with thinner stroke and glow -->
+                <g>
+                    <circle cx="720" cy="450" r="5" stroke="url(#particleColor2)" stroke-width="0.5" fill="none" opacity="0.6" filter="url(#thinLineGlow)">
+                        <animate attributeName="r" values="5;100;5" dur="20s" repeatCount="indefinite"/>
+                        <animate attributeName="stroke-opacity" values="0.6;0;0.6" dur="20s" repeatCount="indefinite"/>
+                        <animate attributeName="stroke-width" values="0.5;0.2;0.5" dur="20s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <circle cx="720" cy="450" r="5" stroke="url(#particleColor1)" stroke-width="0.5" fill="none" opacity="0.5" filter="url(#thinLineGlow)">
+                        <animate attributeName="r" values="5;80;5" dur="15s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="stroke-opacity" values="0.5;0;0.5" dur="15s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="stroke-width" values="0.5;0.2;0.5" dur="15s" repeatCount="indefinite" begin="-5s"/>
+                    </circle>
+                    
+                    <circle cx="720" cy="450" r="5" stroke="url(#particleColor3)" stroke-width="0.5" fill="none" opacity="0.4" filter="url(#thinLineGlow)">
+                        <animate attributeName="r" values="5;60;5" dur="10s" repeatCount="indefinite" begin="-7s"/>
+                        <animate attributeName="stroke-opacity" values="0.4;0;0.4" dur="10s" repeatCount="indefinite" begin="-7s"/>
+                        <animate attributeName="stroke-width" values="0.5;0.2;0.5" dur="10s" repeatCount="indefinite" begin="-7s"/>
+                    </circle>
+                </g>
+                
+                <!-- Additional small particles scattered throughout -->
+                <g class="pulse-rotate">
+                    <circle cx="150" cy="750" r="1.5" fill="url(#particleColor1)" opacity="0.8"/>
+                    <circle cx="1050" cy="300" r="1.8" fill="url(#particleColor2)" opacity="0.7"/>
+                    <circle cx="550" cy="150" r="1.2" fill="url(#particleColor3)" opacity="0.9"/>
+                    <circle cx="950" cy="800" r="1.4" fill="url(#particleColor1)" opacity="0.8"/>
+                    <circle cx="1350" cy="550" r="1.6" fill="url(#particleColor2)" opacity="0.7"/>
+                    <circle cx="250" cy="400" r="1.3" fill="url(#particleColor3)" opacity="0.9"/>
+                    <circle cx="800" cy="100" r="1.5" fill="url(#particleColor1)" opacity="0.8"/>
+                    <circle cx="650" cy="850" r="1.7" fill="url(#particleColor2)" opacity="0.7"/>
+                    <circle cx="350" cy="550" r="1.2" fill="url(#particleColor3)" opacity="0.9"/>
+                    <circle cx="1150" cy="450" r="1.6" fill="url(#particleColor1)" opacity="0.8"/>
+                    <circle cx="450" cy="200" r="1.4" fill="url(#particleColor2)" opacity="0.7"/>
+                    <circle cx="1250" cy="700" r="1.3" fill="url(#particleColor3)" opacity="0.9"/>
+                </g>
+                
+                <!-- Shooting particles that move quickly across screen -->
+                <g>
+                    <circle cx="-50" cy="200" r="2" fill="url(#particleColor1)" opacity="0.9">
+                        <animate attributeName="cx" values="-50;1500" dur="6s" repeatCount="indefinite" begin="-2s"/>
+                        <animate attributeName="opacity" values="0;0.9;0" dur="6s" repeatCount="indefinite" begin="-2s"/>
+                    </circle>
+                    
+                    <circle cx="-50" cy="600" r="2.5" fill="url(#particleColor2)" opacity="0.8">
+                        <animate attributeName="cx" values="-50;1500" dur="8s" repeatCount="indefinite" begin="-5s"/>
+                        <animate attributeName="opacity" values="0;0.8;0" dur="8s" repeatCount="indefinite" begin="-5s"/>
+                    </circle>
+                    
+                    <circle cx="1500" cy="300" r="2" fill="url(#particleColor3)" opacity="0.7">
+                        <animate attributeName="cx" values="1500;-50" dur="7s" repeatCount="indefinite" begin="-3s"/>
+                        <animate attributeName="opacity" values="0;0.7;0" dur="7s" repeatCount="indefinite" begin="-3s"/>
+                    </circle>
+                    
+                    <circle cx="1500" cy="700" r="2.5" fill="url(#particleColor1)" opacity="0.8">
+                        <animate attributeName="cx" values="1500;-50" dur="9s" repeatCount="indefinite" begin="-7s"/>
+                        <animate attributeName="opacity" values="0;0.8;0" dur="9s" repeatCount="indefinite" begin="-7s"/>
+                    </circle>
+                </g>
+            </g>
+            
+            <!-- Layer 5: Interactive Highlight Effects with thinner stroke and enhanced glow -->
+            <g opacity="0.3" class="float-around" style="animation-delay: -10s;">
+                <ellipse cx="720" cy="450" rx="400" ry="300" fill="none" stroke="url(#blueprintLineGradient)" stroke-width="0.5" filter="url(#thinLineGlow)">
+                    <animate attributeName="rx" values="400;420;380;410;400" dur="40s" repeatCount="indefinite"/>
+                    <animate attributeName="ry" values="300;280;320;290;300" dur="45s" repeatCount="indefinite"/>
+                    <animate attributeName="stroke-opacity" values="0.3;0.6;0.3" dur="20s" repeatCount="indefinite"/>
+                </ellipse>
+            </g>
+            
+            <!-- Mouse tracking layer that will be populated by JavaScript -->
+            <g id="mouseFollowLayer"></g>
+        </svg>
+    <h1>User Behavior Dashboard</h1>
+
+    <div class="dashboard-container">
+
+        <!-- Overall Session -->
+        <div class="metric-card">
+            <h3>Session Overview</h3>
+            <div class="value" id="totalTime">--:--:--</div>
+            <small>Total Time Spent on App</small>
+             <div class="details">
+                Session Start: <span id="sessionStart">--</span>
+             </div>
+        </div>
+
+        <!-- Code Editing Activity -->
+        <div class="metric-card">
+            <h3>Editing Activity</h3>
+            <div class="details">
+                HTML Keystrokes: <span id="htmlKeystrokes">0</span>
+            </div>
+             <div class="details">
+                CSS Keystrokes: <span id="cssKeystrokes">0</span>
+            </div>
+             <div class="details">
+                JS Keystrokes: <span id="jsKeystrokes">0</span>
+            </div>
+            <div class="details">
+                Total Edits: <span id="totalEdits">0</span>
+            </div>
+             <div class="details">
+                Avg. Edit Size: <span id="avgEditSize">0</span> lines
+            </div>
+            <small>Keystrokes, Edit Frequency & Size</small>
+        </div>
+
+         <div class="metric-card">
+            <h3>Time Allocation</h3>
+             <div class="details">
+                HTML Focus: <span id="htmlFocusTime">--:--:--</span>
+            </div>
+             <div class="details">
+                CSS Focus: <span id="cssFocusTime">--:--:--</span>
+            </div>
+             <div class="details">
+                JS Focus: <span id="jsFocusTime">--:--:--</span>
+            </div>
+            <small>Active time per editor</small>
+        </div>
+
+        <!-- AI Usage -->
+        <div class="metric-card">
+            <h3>AI Generation</h3>
+            <div class="details">
+                Main Attempts: <span id="mainAIAttempts">0</span>
+            </div>
+             <div class="details">
+                HTML AI: <span id="htmlAIAttempts">0</span>
+            </div>
+             <div class="details">
+                CSS AI: <span id="cssAIAttempts">0</span>
+            </div>
+             <div class="details">
+                JS AI: <span id="jsAIAttempts">0</span>
+            </div>
+             <div class="details">
+                Prompts Used: <span id="promptsUsedCount">0</span>
+            </div>
+            <small>Frequency of AI feature use</small>
+        </div>
+
+        <div class="metric-card">
+            <h3>API Configuration</h3>
+             <div class="details">
+                Modal Opens: <span id="apiKeyModalOpens">0</span>
+            </div>
+             <div class="details">
+                Saves: <span id="apiKeySaves">0</span>
+            </div>
+             <div class="details">
+                Used Creator Key: <span id="usedCreatorKey">No</span>
+            </div>
+             <div class="details">
+                 Model Pref: <span id="modelPreference">--</span>
+            </div>
+            <small>How users configure API keys</small>
+        </div>
+
+
+        <!-- Preview & Execution -->
+        <div class="metric-card">
+            <h3>Preview & Debugging</h3>
+            <div class="details">
+                 Preview Refreshes: <span id="previewRefreshes">0</span>
+            </div>
+            <div class="details">
+                 Avg. Time Edit-Refresh: <span id="avgEditRefreshTime">--</span>s
+            </div>
+            <div class="details">
+                 Console Tab Focus: <span id="consoleFocusRatio">--</span>%
+            </div>
+            <small>How users view/test output</small>
+        </div>
+
+        <!-- Feature Interaction -->
+        <div class="metric-card">
+            <h3>Image Handling</h3>
+             <div class="details">
+                Upload Button Clicks: <span id="imageUploadClicks">0</span>
+            </div>
+             <div class="details">
+                Successful Uploads: <span id="imageUploads">0</span> (incl. paste/drop)
+            </div>
+            <small>Interaction with image features</small>
+        </div>
+
+        <div class="metric-card">
+            <h3>JS Library Use</h3>
+             <div class="details">
+                Dropdown Opens: <span id="libraryOpens">0</span>
+            </div>
+             <div class="details">
+                Searches Performed: <span id="librarySearches">0</span>
+            </div>
+             <div class="details">
+                Libraries Loaded: <span id="librariesLoaded">0</span>
+            </div>
+            <small>Use of external JS libraries</small>
+        </div>
+
+        <div class="metric-card">
+            <h3>UI & Layout</h3>
+             <div class="details">
+                Fullscreen Toggles: <span id="fullscreenToggles">0</span>
+            </div>
+             <div class="details">
+                Time in Fullscreen: <span id="fullscreenTime">--:--:--</span>
+            </div>
+             <div class="details">
+                Advanced Layout Toggles: <span id="layoutToggles">0</span>
+            </div>
+             <div class="details">
+                Hamburger Opens: <span id="hamburgerOpens">0</span>
+            </div>
+            <small>User interface preferences</small>
+        </div>
+
+        <div class="metric-card">
+            <h3>Learning Tools</h3>
+             <div class="details">
+                 Wiki/Quiz Opens: <span id="wikiModalOpens">0</span>
+             </div>
+             <div class="details">
+                 Flashcard Flips: <span id="flashcardFlips">0</span>
+             </div>
+             <div class="details">
+                 Quiz Interactions: <span id="quizInteractions">0</span>
+             </div>
+             <div class="details">
+                 Quiz Checks: <span id="quizChecks">0</span>
+             </div>
+            <small>Engagement with educational features</small>
+        </div>
+
+        <!-- Session Health -->
+        <div class="metric-card">
+            <h3>Session Health</h3>
+             <div class="details">
+                 JS Errors: <span id="jsErrors">0</span>
+             </div>
+             <div class="details">
+                 Worker Errors: <span id="workerErrors">0</span>
+             </div>
+            <small>Indicates potential user struggles</small>
+        </div>
+
+
+        <!-- Charts -->
+         <div class="metric-card" style="grid-column: 1 / -1;"> <!-- Span full width -->
+            <h3>Activity Over Time</h3>
+            <div class="chart-container">
+                <canvas id="activityChart"></canvas>
+            </div>
+            <small>Edits, Refreshes, and AI Usage per minute/interval</small>
+        </div>
+
+        <div class="metric-card" style="grid-column: 1 / -1;"> <!-- Span full width -->
+            <h3>Errors Over Time</h3>
+            <div class="chart-container">
+                <canvas id="errorChart"></canvas>
+            </div>
+            <small>JS and Worker errors per minute/interval</small>
+        </div>
+    </div> 
+    <button class="refresh-button" id="refreshData">Refresh Data</button>
+    <button class="download-button" id="downloadReport">Download Report (CSV)</button> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <script src="dashboard.js"></script>
+
+</body>
+</html>

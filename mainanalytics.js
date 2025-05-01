@@ -5,22 +5,10 @@ let originalImageData = null;
 let selectedRegions = null;
 let animationFrameId = null;
 let workerActive = false;
-let currentMode = 'worker'; // Track current mode ('worker' or 'plot')
-let autoPlotTimeout = null; // For debouncing auto-plot
+
 
 let trackingData = {};
 const TRACKING_STORAGE_KEY = 'userBehaviorTrackingData';
-
-let plotInstance = null; // Keep track of the function-plot instance
-let currentPlotOptions = {}; // Store base options for redraw/resize
-let parsedEquationData = []; // Store the raw parsed structures from input
-let isAnimatingK = false;   // Specifically for k-animation
-let kValue = 0;
-let kMin = 0;
-let kMax = 10;
-let kStep = 0.1;
-let requiresK = false; // Does the current plot use 'k'?
-
 
 function initializeTracking() {
     const savedData = localStorage.getItem(TRACKING_STORAGE_KEY);
@@ -257,15 +245,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const dashboardModal = document.getElementById('dashboardModal');
     const dashboardFrame = document.getElementById('dashboardFrame');
     const closeDashboardModalBtn = document.getElementById('closeDashboardModal');
-    const animPlayPauseButton = document.getElementById('animPlayPauseButton');
-    const animResetButton = document.getElementById('animResetButton');
-    const kMinInput = document.getElementById('kMinInput');
-    const kMaxInput = document.getElementById('kMaxInput');
-    const kStepInput = document.getElementById('kStepInput');
-    const kValueDisplay = document.getElementById('kValueDisplay');
-    const kValueDisplayContainer = document.getElementById('kValueDisplayContainer');
-    const animationControlsDiv = document.getElementById('animationControls');
-    // --- END NEW ---
 
     // --- Dashboard Modal Logic ---
 
@@ -1377,8 +1356,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createPlaceholderCanvas(htmlContainer) {
         canvas = document.createElement('canvas');
-        canvas.id = "222222222222222"
-
         canvas.width = 360;
         canvas.height = 180;
         canvas.style.backgroundColor = '#252526';
@@ -1601,8 +1578,8 @@ document.addEventListener('DOMContentLoaded', function() {
     htmlEditor.addEventListener('input', () => {
         localStorage.setItem('htmlCode', htmlEditor.value);
         trackingData.htmlKeystrokes++;
-trackingData.totalEdits++;
-trackevent('edit', 'html');
+        trackingData.totalEdits++;
+        trackevent('edit', 'html');
 
     });
     cssEditor.addEventListener('input', () => {
@@ -1613,754 +1590,17 @@ trackevent('edit', 'html');
 
     });
     jsEditor.addEventListener('input', () => {
-        localStorage.setItem('jsCode', jsEditor.value); // Save whatever is in the editor
-
-        // Tracking happens regardless of saving
+        localStorage.setItem('jsCode', jsEditor.value);
         trackingData.jsKeystrokes++;
         trackingData.totalEdits++;
-        trackevent('edit', 'js');
-        
-        // --- The rest of the debounced logic (auto-plotting check) follows ---
-        clearTimeout(autoPlotTimeout);
-        autoPlotTimeout = setTimeout(() => {
-            // ... (the existing auto-plot detection logic remains here) ...
-            const jsCode = jsEditor.value;
-            let looksLikePlot = false;
-            // ... (rest of the auto-plot check) ...
-        }, 750);
-        
+         trackevent('edit', 'js');
 
     });
 
     // Initialize tabs
     setupTabs();
-    if (jsEditor) {
-        jsEditor.addEventListener('input', handleJsEditorInput);
-    }
 
-    if (refreshPreviewBtn) {
-        // This button now decides what to run
-        refreshPreviewBtn.addEventListener('click', executeCode);
-    } else {
-        console.error("Refresh Preview button not found.");
-    }
-
-    
-    // --- Modified Execution Flow ---
-    function executeCode() {
-        console.log("--- Executing Code ---");
-        terminateWorkerAndAnimation(); // Stop previous activity (worker AND k-anim)
-        clearExistingPlot();           // Clear only the SVG plot initially
-
-        const jsCode = jsEditor.value; // Get code *as it is* on load
-        const consoleOutput = jsOutput;
-        consoleOutput.innerHTML = ''; // Clear console
-
-        // --- Mode Detection & Parsing ---
-        let looksLikePlot = false;
-        let plotParseErrors = [];
-        parsedEquationData = []; // Reset global parsed data
-        requiresK = false;       // Reset global k requirement flag
-
-        console.log("[Initial Load/Refresh] JS Code to analyze:", JSON.stringify(jsCode)); // Log the code
-
-        if (jsCode.trim() !== '') {
-            // Heuristic: If it doesn't contain worker keywords, *try* parsing as plot
-            if (!jsCode.includes('onmessage') && !jsCode.includes('postMessage(')) {
-                const lines = jsCode.split(/[;\n]+/).filter(s => s.trim() !== '');
-                let potentialPlotLines = 0;
-                console.log("[Initial Load/Refresh] Lines to parse:", lines); // Log lines
-
-                lines.forEach((line, index) => {
-                    // Ensure the parser function is called correctly
-                    const result = parseSingleEquationForPlot(line); // Use the plot equation parser
-                    console.log(`[Initial Load/Refresh] Parsing Line ${index} ('${line}'):`, result); // Log parse result
-
-                    if (result.data) {
-                        // Check if the result structure is valid (has fn, or x/y, or r)
-                        if (result.data.fn || (result.data.x && result.data.y) || result.data.r) {
-                            parsedEquationData.push(result.data); // Store the original parsed structure
-                            if (result.usesK) {
-                                requiresK = true;
-                            }
-                            potentialPlotLines++;
-                        } else {
-                             console.warn(`[Initial Load/Refresh] Parsed data for line '${line}' seems incomplete. Skipping.`);
-                             if (!result.error) { // Add an error if parsing didn't report one but data is bad
-                                 plotParseErrors.push(`Eq #${index + 1}: Incomplete plot data structure for '${line}'.`);
-                             }
-                        }
-                    } else if (result.error && line.trim()) {
-                        plotParseErrors.push(`Eq #${index + 1}: ${result.error}`);
-                    }
-                });
-
-                console.log("[Initial Load/Refresh] Potential Plot Lines:", potentialPlotLines);
-                console.log("[Initial Load/Refresh] Parse Errors:", plotParseErrors);
-
-                // Adjust the heuristic: prioritize plot if *any* line successfully parses
-                // and there aren't an excessive number of errors compared to successes.
-                // Allow more errors relative to successes if needed.
-                if (potentialPlotLines > 0 && plotParseErrors.length <= potentialPlotLines * 3) { // Increased tolerance for errors
-                     looksLikePlot = true;
-                } else if (potentialPlotLines > 0 && plotParseErrors.length > 0) {
-                    console.warn("[Initial Load/Refresh] Some lines parsed for plot, but many errors. Review input.");
-                    // Optionally, still treat as plot if at least one line worked?
-                    // looksLikePlot = true; // Uncomment this to force plot mode if *anything* parses
-                } else if (potentialPlotLines === 0 && plotParseErrors.length > 0) {
-                     console.log("[Initial Load/Refresh] No lines parsed successfully for plot, only errors found.");
-                } else if (potentialPlotLines === 0 && plotParseErrors.length === 0 && jsCode.trim()) {
-                     console.log("[Initial Load/Refresh] No lines parsed for plot, no errors. Treating as worker code (or unrecognized).");
-                }
-
-            } else {
-                 console.log("[Initial Load/Refresh] Found 'onmessage' or 'postMessage'. Assuming Worker code.");
-            }
-        } else {
-             console.log("[Initial Load/Refresh] JS Editor is empty.");
-             // Default behavior for empty editor (e.g., load base image but don't run worker/plot)
-        }
-
-        console.log("[Initial Load/Refresh] Mode Detected:", looksLikePlot ? 'Plot' : 'Worker');
-        console.log("[Initial Load/Refresh] Requires K:", requiresK);
-
-        // --- Hide/Show Animation Controls ---
-        // Logic remains the same: show controls only if plot mode AND requiresK
-        if (looksLikePlot && requiresK) {
-            animationControlsDiv.style.display = 'flex';
-            kValueDisplayContainer.style.display = 'inline';
-            animPlayPauseButton.disabled = false;
-            animResetButton.disabled = true;
-        } else {
-            animationControlsDiv.style.display = 'none';
-            kValueDisplayContainer.style.display = 'none';
-             // Also ensure buttons are disabled if not plot+k mode
-             animPlayPauseButton.disabled = true;
-             animResetButton.disabled = true;
-        }
-
-        // --- Ensure Canvas Exists BEFORE deciding mode action ---
-        ensureBaseCanvasExists().then(() => {
-             console.log("[Initial Load/Refresh] Canvas ready, proceeding with mode:", looksLikePlot ? 'Plot' : 'Worker');
-             // Now that canvas is guaranteed, run the appropriate mode
-            if (looksLikePlot) {
-                currentMode = 'plot';
-                console.log("Running as: Plot", "| Requires K:", requiresK);
-                consoleOutput.innerHTML = 'Plotting equations...';
-                // Read initial K values from inputs
-                kMin = parseFloat(kMinInput.value) || 0;
-                kMax = parseFloat(kMaxInput.value) || 10;
-                kStep = parseFloat(kStepInput.value) || 0.1;
-                if (kMin >= kMax && kStep > 0) kStep = -Math.abs(kStep || 0.1);
-                if (kMin <= kMax && kStep < 0) kStep = Math.abs(kStep || 0.1);
-                if (kStep === 0) kStep = (kMax > kMin) ? 0.1 : -0.1;
-                 kStepInput.value = kStep; // Update input if step changed
-                kValue = kMin; // Start at kMin
-                updateKDisplay();
-                runPlotterCode(parsedEquationData, plotParseErrors); // Pass original parsed data
-            }
-            // Handle the case where the editor might be empty or code is unrecognized
-            else if (jsCode.trim() === '') {
-                 currentMode = 'idle'; // Or 'setup'
-                 console.log("Running as: Idle (Empty Editor)");
-                 // Don't run worker or plotter, just show the base canvas (which ensureBaseCanvasExists did)
-                 consoleOutput.innerHTML = 'JS Editor is empty. Enter code to run.';
-                 animationControlsDiv.style.display = 'none'; // Hide plot controls
-                 kValueDisplayContainer.style.display = 'none';
-            }
-            // Only run worker if detection explicitly decided it's worker code
-            else {
-                currentMode = 'worker';
-                console.log("Running as: Worker");
-                consoleOutput.innerHTML = 'Running worker code...';
-                animationControlsDiv.style.display = 'none'; // Hide plot controls
-                kValueDisplayContainer.style.display = 'none';
-                runWorkerCode(); // Run the animation worker
-            }
-            trackevent('refresh', currentMode); // Track the final mode executed
-        }).catch(error => {
-            console.error("Failed to prepare canvas for execution:", error);
-            consoleOutput.innerHTML = `Error: Could not prepare canvas. ${error.message}`;
-            trackError('canvas_ensure', error.message);
-             // Hide plot controls on error
-             animationControlsDiv.style.display = 'none';
-             kValueDisplayContainer.style.display = 'none';
-        });
-    }
-
-
-    const debouncedAutoExecute = debounce(() => {
-        const jsCode = jsEditor.value;
-        let looksLikePlot = false;
-        let parsedPlotData = [];
-        let parseErrors = [];
-
-        // Perform quick check for plot mode (same heuristic as executeCode)
-        if (jsCode.trim() !== '' && !jsCode.includes('onmessage') && !jsCode.includes('postMessage(')) {
-            const lines = jsCode.split(/[;\n]+/).filter(s => s.trim() !== '');
-            let potentialPlotLines = 0;
-            lines.forEach(line => { const r = parseSingleEquationForPlot(line); if(r.data) { parsedPlotData.push(r.data); potentialPlotLines++; } else if(r.error && line.trim()){ parseErrors.push(r.error); } });
-            if (potentialPlotLines > 0 && parseErrors.length <= potentialPlotLines * 2) { looksLikePlot = true; }
-        }
-
-        if (looksLikePlot) {
-            console.log("Auto-plotting triggered...");
-            terminateWorkerAndAnimation();
-            clearExistingPlot();
-            currentMode = 'plot';
-            runPlotterCode(parsedPlotData, parseErrors); // Plot directly
-        } else {
-             console.log("Input doesn't look like plot equations, skipping auto-run.");
-             currentMode = 'worker';
-        }
-    }, 750); // 750ms debounce
-
-    function handleJsEditorInput() {
-        console.log("handleJsEditorInput: Event triggered."); // Log event start
-    
-        const currentJsCode = jsEditor.value; // Get value immediately
-        const codeLength = currentJsCode.length;
-        console.log(`handleJsEditorInput: Code length = ${codeLength}`);
-    
-        // --- Save JS code to localStorage (with detailed logging and error handling) ---
-        try {
-            console.log("handleJsEditorInput: Attempting localStorage.setItem('jsCode')...");
-            localStorage.setItem('jsCode', currentJsCode);
-            console.log("handleJsEditorInput: localStorage.setItem completed.");
-    
-            // Verification step: Read back immediately to check
-            const savedValue = localStorage.getItem('jsCode');
-            const savedLength = savedValue ? savedValue.length : 'null';
-            console.log(`handleJsEditorInput: Verified localStorage length = ${savedLength}`);
-    
-            if (savedLength !== codeLength) {
-                console.error("!!! handleJsEditorInput: LENGTH MISMATCH after saving to localStorage! Original:", codeLength, "Saved:", savedLength);
-            } else {
-                console.log("handleJsEditorInput: localStorage length verification successful.");
-            }
-    
-        } catch (e) {
-            console.error("!!! handleJsEditorInput: Error during localStorage.setItem:", e);
-            if (e.name === 'QuotaExceededError') {
-                alert("Error: The JavaScript code is too large to save automatically in your browser's local storage (" + (codeLength / 1024 / 1024).toFixed(2) + " MB). Please shorten it or save it externally.");
-                console.warn("LocalStorage quota exceeded trying to save JS code. Code might be too large.");
-            }
-            // Optionally stop further processing in this handler if saving failed
-            // return;
-        }
-    
-        // --- Tracking (runs even if verification failed, unless error stopped execution) ---
-        try {
-            trackingData.jsKeystrokes++;
-            trackingData.totalEdits++;
-            trackevent('edit', 'js');
-            console.log("handleJsEditorInput: Tracking updated.");
-        } catch (trackingError) {
-            console.error("!!! handleJsEditorInput: Error during tracking update:", trackingError);
-        }
-    
-    
-        // --- Debounced Auto-Plot Logic (remains the same) ---
-        clearTimeout(autoPlotTimeout);
-        autoPlotTimeout = setTimeout(() => {
-            console.log("handleJsEditorInput: Debounced auto-plot check starting...");
-            const jsCodeForPlotCheck = jsEditor.value; // Use current value for check
-            let looksLikePlot = false;
-            let tempParsedData = [];
-            let tempParseErrors = [];
-            let tempRequiresK = false;
-    
-            // Parsing logic... (keep the parsing logic from previous correct version here)
-            if (jsCodeForPlotCheck.trim() !== '' && !jsCodeForPlotCheck.includes('onmessage') && !jsCodeForPlotCheck.includes('postMessage(')) {
-                const lines = jsCodeForPlotCheck.split(/[;\n]+/).filter(s => s.trim() !== '');
-                let potentialPlotLines = 0;
-                lines.forEach((line, index) => {
-                    const result = parseSingleEquationForPlot(line);
-                    if (result.data) {
-                        if (result.data.fn || (result.data.x && result.data.y) || result.data.r) {
-                            tempParsedData.push(result.data);
-                            if (result.usesK) { tempRequiresK = true; }
-                            potentialPlotLines++;
-                        } else {
-                            if (!result.error) tempParseErrors.push(`Eq #${index + 1}: Incomplete plot data for '${line}'.`);
-                        }
-                    } else if (result.error && line.trim()) {
-                        tempParseErrors.push(`Eq #${index + 1}: ${result.error}`);
-                    }
-                });
-                if (potentialPlotLines > 0 && tempParseErrors.length <= potentialPlotLines * 3) {
-                     looksLikePlot = true;
-                 }
-            }
-            // End parsing logic
-    
-            console.log(`handleJsEditorInput: Debounced auto-plot check finished. looksLikePlot = ${looksLikePlot}`);
-    
-            if (looksLikePlot) {
-                console.log("handleJsEditorInput: Auto-plotting triggered...");
-                // ... (rest of the auto-plotting execution logic, identical to the correct version) ...
-                 terminateWorkerAndAnimation();
-                 clearExistingPlot();
-                 currentMode = 'plot';
-                 parsedEquationData = tempParsedData;
-                 requiresK = tempRequiresK;
-                 if (requiresK) { /* Show controls */ animationControlsDiv.style.display = 'flex'; kValueDisplayContainer.style.display = 'inline'; animPlayPauseButton.disabled = false; animResetButton.disabled = true; } else { /* Hide controls */ animationControlsDiv.style.display = 'none'; kValueDisplayContainer.style.display = 'none'; animPlayPauseButton.disabled = true; animResetButton.disabled = true; }
-                 kMin = parseFloat(kMinInput.value) || 0; kMax = parseFloat(kMaxInput.value) || 10; kStep = parseFloat(kStepInput.value) || 0.1;
-                 if (kMin >= kMax && kStep > 0) kStep = -Math.abs(kStep || 0.1); if (kMin <= kMax && kStep < 0) kStep = Math.abs(kStep || 0.1); if (kStep === 0) kStep = (kMax > kMin) ? 0.1 : -0.1; kStepInput.value = kStep;
-                 kValue = kMin; updateKDisplay();
-                 runPlotterCode(parsedEquationData, tempParseErrors);
-            } else {
-                console.log("handleJsEditorInput: Input doesn't look like plot equations, skipping auto-plot.");
-                // No automatic mode switch here, just skip auto-plotting
-            }
-        }, 750); // Debounce time
-    }
- 
-    function updateKDisplay() {
-        if(kValueDisplay) {
-             kValueDisplay.textContent = kValue.toFixed(Math.max(2, (kStep.toString().split('.')[1] || '').length)); // Show decimal places based on step
-        }
-    }
-    function runWorkerCode() {
-        console.log("Running code as Worker/Animation...");
-        animationControlsDiv.style.display = 'none';
-        kValueDisplayContainer.style.display = 'none';
-
-        const htmlCode = htmlEditor.value;
-        const cssCode = cssEditor.value;
-
-        // jsCode for worker is already available globally or fetched if needed
-
-        // **Crucially, clear htmlOutput completely for worker mode**
-        // to ensure a clean slate and avoid interference with previous plots/canvases
-        htmlOutput.innerHTML = '';
-        jsOutput.innerHTML = 'Initializing worker...';
-        cssOutput.innerHTML = cssCode;
-
-
-        try {
-            // Setup HTML and CSS in the preview
-            const htmlContainer = document.createElement('div');
-            htmlContainer.innerHTML = htmlCode;
-            const styleElement = document.createElement('style');
-            styleElement.textContent = cssCode;
-            htmlOutput.appendChild(styleElement);
-            htmlOutput.appendChild(htmlContainer); // Add user's HTML structure
-
-            // Load base image, which will create/reuse THE canvas and then start worker
-            loadImageForWorker(htmlContainer);
-
-        } catch (error) {
-            jsOutput.innerHTML = `Error setting up preview: ${error.message}`;
-            console.error('Preview Setup Error:', error);
-            trackError('setup', error.message);
-        }
-    }
-
-
-    function ensureBaseCanvasExists() {
-        return new Promise((resolve, reject) => {
-            console.log("Ensuring base canvas exists...");
-            let existingCanvas = htmlOutput.querySelector(':scope > canvas');
-
-            // If canvas exists and seems okay (has context, maybe check dimensions?), resolve.
-            if (existingCanvas && existingCanvas.getContext('2d')) {
-                console.log("Base canvas found and seems valid.");
-                canvas = existingCanvas; // Update global reference
-                ctx = canvas.getContext('2d');
-                // We might still need to load/reload originalImageData if it's missing
-                if (!originalImageData) {
-                    console.warn("Canvas exists, but originalImageData missing. Will attempt to load.");
-                } else {
-                    resolve();
-                    return;
-                }
-            } else if (existingCanvas) {
-                // Canvas exists but is maybe broken (no context, zero size?) - remove it
-                console.warn("Found existing canvas, but it seems invalid. Removing and recreating.");
-                htmlOutput.removeChild(existingCanvas);
-                canvas = null; // Clear global refs
-                ctx = null;
-                originalImageData = null;
-            } else {
-                 console.log("No existing canvas found in #htmlOutput.");
-            }
-
-            // --- Load image and create/prepare canvas ---
-            const imageSrc = localStorage.getItem('uploadedImage') || 'white.png';
-            const img = new Image();
-
-            img.onload = function() {
-                if (!canvas) { // Create canvas only if it wasn't found/reused
-                    canvas = document.createElement('canvas');
-                    canvas.id = "3333333333"
-                    htmlOutput.appendChild(canvas);
-                    canvas.style.display = "none";
-                    console.log("Created NEW canvas inside #htmlOutput.");
-                } else {
-                     console.log("Reusing existing canvas element.");
-                     // Clear it before drawing new image
-                    //  const reuseCtx = canvas.getContext('2d');
-                    //  if(reuseCtx) {
-                    //      reuseCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    //  }
-                }
-
-                // Set attributes and get context
-                canvas.width = img.width;
-                canvas.height = img.height;
-                canvas.style.maxWidth = '100%'; // Responsive
-                // CSS handles positioning (relative, z-index: 1)
-                ctx = canvas.getContext('2d');
-                if (!ctx) { reject(new Error("Failed to get 2D context.")); return; }
-
-
-                // Get image data (using temp canvas is safer)
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.id = "444444444444"
-
-                tempCanvas.width = img.width; tempCanvas.height = img.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.drawImage(img, 0, 0);
-                originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
-
-                // Prepare selectedRegions (example: all non-transparent)
-                const pixelIndices = [];
-                const imgData = originalImageData.data;
-                const width = originalImageData.width; const height = originalImageData.height;
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const idx = (y * width + x) * 4 + 3;
-                        if (imgData[idx] > 0) pixelIndices.push((idx - 3) / 4);
-                    }
-                }
-
-                selectedRegions = [pixelIndices];
-
-                // Draw initial image onto the main canvas
-                ctx.putImageData(originalImageData, 0, 0);
-                console.log("Canvas ready, image loaded/drawn.");
-                resolve(); // Canvas is ready
-            };
-
-            img.onerror = function() {
-                console.error(`Failed to load base image: ${imageSrc}`);
-                // Clear htmlOutput completely if image fails, show placeholder
-                htmlOutput.innerHTML = ''; // Clear everything
-                createPlaceholderCanvas(htmlOutput);
-
-                // Use existing placeholder func
-                reject(new Error(`Failed to load base image ${imageSrc}`));
-                trackError('image_load', `Failed to load ${imageSrc}`);
-            };
-
-            img.src = imageSrc;
-        });
-    }
-
-
-    function drawCurrentFrame() {
-        if (parsedEquationData.length === 0 || !htmlOutput) {
-            console.warn("Cannot draw frame - no parsed data or output element missing.");
-            return;
-        }
-
-        // --- WORKAROUND: Substitute k value directly into function strings ---
-        const frameSpecificData = parsedEquationData.map(eqData => {
-            const newEqData = { ...eqData };
-            const kString = `(${kValue})`; // Wrap k value in parentheses for safety
-
-            try {
-                 // Apply substitution based on function type
-                 if (newEqData.fnType === 'implicit' && /\bk\b/.test(newEqData.fn)) {
-                     newEqData.fn = newEqData.fn.replace(/\bk\b/g, kString);
-                 } else if (newEqData.fnType === 'parametric') {
-                     if (/\bk\b/.test(newEqData.x)) newEqData.x = newEqData.x.replace(/\bk\b/g, kString);
-                     if (/\bk\b/.test(newEqData.y)) newEqData.y = newEqData.y.replace(/\bk\b/g, kString);
-                 } else if (newEqData.fnType === 'polar' && /\bk\b/.test(newEqData.r)) {
-                     newEqData.r = newEqData.r.replace(/\bk\b/g, kString);
-                 } else if (!newEqData.fnType && newEqData.fn && /\bk\b/.test(newEqData.fn)) { // Explicit y=f(x,k)
-                     newEqData.fn = newEqData.fn.replace(/\bk\b/g, kString);
-                 }
-            } catch (replaceError) {
-                console.error("Error substituting k value:", replaceError, "Original:", eqData.fn || eqData.r || eqData.x);
-                // Fallback or handle error - maybe skip this equation for the frame?
-                return null; // Indicate failure to substitute
-            }
-            return newEqData;
-        }).filter(data => data !== null); // Remove equations where substitution failed
-
-        // --- End Workaround ---
-
-        let plotOptions = {
-            target: '#htmlOutput', // Target the main output div
-            width: currentPlotOptions.width || htmlOutput.clientWidth || 600,
-            height: currentPlotOptions.height || htmlOutput.clientHeight || 400,
-            grid: true,
-            data: frameSpecificData, // Use the data with 'k' substituted for THIS frame
-            // Scope might still be needed for titles or annotations if functionPlot uses it
-            scope: { k: kValue }
-        };
-
-        // Preserve zoom/pan from previous state if available
-        if (currentPlotOptions.xAxis && currentPlotOptions.yAxis) {
-            plotOptions.xAxis = { ...currentPlotOptions.xAxis };
-            plotOptions.yAxis = { ...currentPlotOptions.yAxis };
-        } else {
-            // Default domain if no previous state
-            plotOptions.xAxis = { domain: [-10, 10] };
-            plotOptions.yAxis = { domain: [-10, 10] };
-        }
-
-        try {
-            // Create/update the plot instance
-            plotInstance = functionPlot(plotOptions); // Plot with substituted data
-
-            // Store the base options for the *next* frame or resize
-            // Crucially, store the ORIGINAL parsed data with 'k'
-            currentPlotOptions = {
-                 target: plotOptions.target,
-                 width: plotOptions.width,
-                 height: plotOptions.height,
-                 grid: plotOptions.grid,
-                 data: parsedEquationData, // Store original data
-                 xAxis: plotOptions.xAxis, // Store current domain
-                 yAxis: plotOptions.yAxis  // Store current domain
-            };
-
-
-             // Add listeners AFTER instance creation
-             plotInstance.on('error', (err) => {
-                 console.error(`functionPlot runtime error (k=${kValue.toFixed(2)}):`, err);
-                 jsOutput.innerHTML += `<br><span style="color:red;">Runtime Plot Error (k=${kValue.toFixed(2)}): ${err.message || err}</span>`;
-                 stopAnimationK();
-                 trackError('plot_runtime', err.message || err);
-             });
-
-              // Listener to update stored domain on zoom/pan
-             plotInstance.on('all', (eventName) => { // Listen to all events
-                if (eventName === 'programmatic-zoom' || eventName === 'zoom' || eventName === 'pan') {
-                    if (plotInstance && plotInstance.meta && plotInstance.meta.xScale && plotInstance.meta.yScale) {
-                        const currentXDomain = plotInstance.meta.xScale.domain();
-                        const currentYDomain = plotInstance.meta.yScale.domain();
-                        // Update the stored options ONLY if the domain actually changed
-                        if (currentPlotOptions.xAxis?.domain?.[0] !== currentXDomain[0] || currentPlotOptions.xAxis?.domain?.[1] !== currentXDomain[1]) {
-                           currentPlotOptions.xAxis = { domain: currentXDomain };
-                           // console.log("Updated stored xDomain:", currentXDomain);
-                        }
-                         if (currentPlotOptions.yAxis?.domain?.[0] !== currentYDomain[0] || currentPlotOptions.yAxis?.domain?.[1] !== currentYDomain[1]) {
-                            currentPlotOptions.yAxis = { domain: currentYDomain };
-                            // console.log("Updated stored yDomain:", currentYDomain);
-                        }
-                    }
-                }
-             });
-
-
-            // Position the plot SVG over the canvas (if needed)
-            positionPlotOverCanvas();
-
-        } catch (plottingError) {
-            console.error("FunctionPlot Instantiation Error:", plottingError);
-            jsOutput.innerHTML += `<br><span style="color:red;">Plot Setup Error: ${plottingError.message}</span>`;
-            plotInstance = null;
-            stopAnimationK(); // Stop animation on error
-            trackError('plot_call', plottingError.message);
-             // Hide plot controls on error
-             animationControlsDiv.style.display = 'none';
-             kValueDisplayContainer.style.display = 'none';
-        }
-    }
-
-    function runPlotterCode(originalParsedData, errors) {
-        const consoleOutput = jsOutput;
-        const htmlOutputTarget = htmlOutput;
-
-        // 1. Ensure the base canvas exists for the plot to overlay
-        ensureBaseCanvasExists().then(() => {
-            // 2. Display parsing errors, if any
-            if (errors && errors.length > 0) {
-                console.error("Parsing errors occurred:", errors);
-                consoleOutput.innerHTML = `Errors found during parsing:<br><pre>${errors.join('<br>')}</pre>`;
-                // Don't necessarily stop plotting if some equations parsed ok
-            } else if (originalParsedData.length > 0) {
-                consoleOutput.innerHTML = 'Plotting equations...'; // Reset console if no errors and data exists
-           
-            }  
-            else {
-                consoleOutput.innerHTML = 'No valid equations to plot.'; // Handle case with no data and no errors
-           }
-
-            if (originalParsedData && originalParsedData.length > 0) {
-                // Use the new function to draw the initial frame (at k=kMin)
-                drawCurrentFrame(); // This now handles plotting internally
-            } else {
-                // No valid data to plot, clear any old plot
-                clearExistingPlot();
-                if (errors.length === 0) { // Only show this if no other errors were shown
-                    consoleOutput.innerHTML += "<br>No valid equations found to plot.";
-                }
-
-
-                animationControlsDiv.style.display = 'none';
-                 kValueDisplayContainer.style.display = 'none';
-            }
-
-            // 3. Plot if there's valid data
-       
-        }).catch(error => {
-             console.error("Error ensuring base canvas:", error);
-             consoleOutput.innerHTML = `Error preparing canvas for plot: ${error.message}`;
-        });
-    }
-
-    
-    function debounce(func, wait) { /* ... implementation ... */
-         let timeout;
-         return function executedFunction(...args) {
-             const later = () => {
-                 clearTimeout(timeout);
-                 func(...args);
-             };
-             clearTimeout(timeout);
-             timeout = setTimeout(later, wait);
-         };
-    }
-
-
-    function terminateWorkerAndAnimation() {
-        // Terminate existing worker
-        if (imageWorker) {
-            imageWorker.terminate();
-            imageWorker = null;
-            workerActive = false;
-            console.log("Terminated existing worker.");
-        }
-        // Clear any existing animation frame
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-            console.log("Cancelled existing animation frame.");
-        }
-    }
-
-    function clearExistingPlot() {
-        // Remove only SVG elements directly within htmlOutput (likely from functionPlot)
-        const existingPlot = htmlOutput.querySelector(':scope > svg'); // More specific selector
-        if (existingPlot) {
-            htmlOutput.removeChild(existingPlot);
-            console.log("Cleared existing plot SVG.");
-        }
-    }
-
-     function positionPlotOverCanvas() {
-        const plotSvg = htmlOutput.querySelector(':scope > svg');
-        const baseCanvas = htmlOutput.querySelector(':scope > canvas'); // Find canvas directly in htmlOutput
-
-        if (baseCanvas && plotSvg) {
-            console.log("Positioning SVG over Canvas");
-            // Ensure parent has relative positioning
-            htmlOutput.style.position = 'relative';
-            htmlOutput.style.overflow = 'hidden'; // Optional
-
-            // Style the canvas
-            baseCanvas.style.position = 'relative'; // Or 'absolute' if needed, but relative is safer
-            baseCanvas.style.zIndex = '1';
-            baseCanvas.style.display = 'block'; // Prevent extra space
-
-            // Style the SVG
-            plotSvg.style.position = 'absolute';
-            plotSvg.style.top = '0';
-            plotSvg.style.left = '0';
-            plotSvg.style.width = '100%';
-            plotSvg.style.height = '100%';
-            plotSvg.style.zIndex = '10';
-            plotSvg.style.pointerEvents = 'none'; // Allow interaction with canvas below
-            // plotSvg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'; // Optional for debugging visibility
-        } else {
-             if (plotSvg) { // If only SVG exists, ensure it fills the container
-                plotSvg.style.width = '100%';
-                plotSvg.style.height = '100%';
-             }
-        }
-    }
-
-
-    function loadImageForWorker(htmlContainer) { // htmlContainer is user's HTML structure
-        const imageSrc = localStorage.getItem('uploadedImage') || 'white.png';
-        const img = new Image();
-
-        img.onload = function() {
-            // --- Query GLOBALLY within htmlOutput first ---
-            canvas = htmlOutput.querySelector('canvas'); // Find ANY canvas inside
-
-            if (!canvas) { // If no canvas exists anywhere inside htmlOutput
-                canvas = document.createElement('canvas');
-                canvas.id = "555555555555"
-
-                // Decide where to append: User's specific container OR directly to htmlOutput
-                const canvasParent = htmlContainer.querySelector('#canvas-container') || htmlOutput;
-                canvasParent.appendChild(canvas);
-                console.log("Created new canvas inside:", canvasParent === htmlOutput ? "#htmlOutput" : "#canvas-container");
-            } else {
-                console.log("Reusing existing canvas for worker animation.");
-                 // Clear existing canvas content before drawing new image data
-                 const existingCtx = canvas.getContext('2d');
-                 if (existingCtx) {
-                     existingCtx.clearRect(0, 0, canvas.width, canvas.height);
-                 }
-            }
-
-            // Set dimensions and style (apply to the found or created canvas)
-            canvas.width = img.width;
-            canvas.height = img.height;
-            canvas.style.maxWidth = '100%';
-            // CSS should handle positioning (relative/absolute)
-
-            ctx = canvas.getContext('2d');
-            // Get image data
-            const tempCanvas = document.createElement('canvas');
-            canvas.id = "666666666666666"
-
-            tempCanvas.width = img.width; tempCanvas.height = img.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(img, 0, 0);
-            originalImageData = tempCtx.getImageData(0, 0, img.width, img.height);
-
-            // Prepare selectedRegions
-            const pixelIndices = [];
-            const imgData = originalImageData.data;
-            const width = originalImageData.width; const height = originalImageData.height;
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const idx = (y * width + x) * 4 + 3; // Alpha
-                    if (imgData[idx] > 0) pixelIndices.push((idx - 3) / 4);
-                }
-            }
-            selectedRegions = [pixelIndices];
-
-            console.log('Image loaded for worker, Regions:', selectedRegions[0].length);
-
-
-            // Draw initial image
-            ctx.putImageData(originalImageData, 0, 0);
-
-            // Now create worker and start animation
-            createWorker();
-
-        };
-        img.onerror = function() {
-            console.error(`Failed to load image: ${imageSrc} for worker.`);
-            // If image fails, clear htmlOutput and show placeholder
-            htmlOutput.innerHTML = ''; // Clear potential faulty canvas attempts
-            createPlaceholderCanvas(htmlOutput); // Use existing placeholder func
-            jsOutput.innerHTML = `Error: Could not load base image '${imageSrc}'.`;
-            trackError('image_load_worker', `Failed to load ${imageSrc}`);
-        };
-        img.src = imageSrc;
-    }
-
-    executeCode(); // Run initial code check on load
+    refreshPreviewBtn.addEventListener('click', runCode);
 
     // Image upload modal handling
     imageUploadBtn.addEventListener('click', function() {
@@ -2444,24 +1684,20 @@ trackevent('edit', 'html');
                 const img = new Image();
                 img.onload = function() {
                     canvas = document.createElement('canvas');
-                    canvas.id = "77777777777777"
-
                     canvas.width = img.width;
                     canvas.height = img.height;
                     canvas.style.maxWidth = '100%';
                     canvas.style.border = '1px solid #444';
-                    canvas.style.borderRadius = '1px';
+                    canvas.style.borderRadius = '8px';
 
                     // Find a suitable container in the HTML for the canvas
                     const canvasContainer = htmlContainer.querySelector('#canvas-container') || htmlOutput;
-                    // canvasContainer.appendChild(canvas);
+                    canvasContainer.appendChild(canvas);
 
                     ctx = canvas.getContext('2d');
 
                     // Create a temporary canvas to get the image data
                     const tempCanvas = document.createElement('canvas');
-                    canvas.id = "888888888888888"
-
                     tempCanvas.width = img.width;
                     tempCanvas.height = img.height;
                     const tempCtx = tempCanvas.getContext('2d');
@@ -2539,7 +1775,6 @@ trackevent('edit', 'html');
             img.onload = function() {
                 // Create a canvas element
                 const tempCanvas = document.createElement('canvas');
-                console.log("99999999999999");
                 tempCanvas.width = img.width;
                 tempCanvas.height = img.height;
                 const tempCtx = tempCanvas.getContext('2d');
@@ -2593,436 +1828,131 @@ trackevent('edit', 'html');
         runCode();
     }
 
-    // function createWorker() {
-    //     // Terminate existing worker if it exists
-    //     if (imageWorker) {
-    //         imageWorker.terminate();
-    //     }
-
-    //     try {
-    //         // Get the worker code from the editor
-    //         const workerCode = jsEditor.value;
-
-    //         // Create a blob URL from the worker code
-    //         const blob = new Blob([workerCode], { type: 'application/javascript' });
-    //         const workerUrl = URL.createObjectURL(blob);
-
-    //         // Create the worker
-    //         imageWorker = new Worker(workerUrl);
-
-    //         // Set up the message handler
-    //         imageWorker.onmessage = function(e) {
-    //             const { segmentedImages, error, progress } = e.data;
-
-    //             if (error) {
-    //                 jsOutput.innerHTML = `Worker Error: ${error}`;
-    //                 console.error('Worker error:', error);
-    //                 return;
-    //             }
-
-    //             if (segmentedImages && segmentedImages.length > 0) {
-    //                 // Draw the segmented image to the canvas
-    //                 ctx.putImageData(segmentedImages[0], 0, 0);
-
-    //                 // Update progress if available
-    //                 if (progress !== undefined) {
-    //                     // const progressPercent = Math.round(progress * 100);
-    //                     // jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
-    //                 }
-    //             }
-    //         };
-
-    //         workerActive = true;
-    //         jsOutput.innerHTML = 'Worker created successfully. Starting animation...';
-
-    //         // Start the animation
-    //         startAnimation();
-    //     } catch (error) {
-    //         jsOutput.innerHTML = `Error creating worker: ${error.message}`;
-    //         console.error('Worker creation error:', error);
-
-    //         trackingData.workerErrors++;
-    //         trackError('worker', errorEvent.message); // Potential variable name issue here
-            
-      
-    //     }
-    // }
-
-
-
     function createWorker() {
-        // terminateWorkerAndAnimation(); // Ensure previous is stopped (already called by runWorkerCode)
+        // Terminate existing worker if it exists
+        if (imageWorker) {
+            imageWorker.terminate();
+        }
+
         try {
+            // Get the worker code from the editor
             const workerCode = jsEditor.value;
+
+            // Create a blob URL from the worker code
             const blob = new Blob([workerCode], { type: 'application/javascript' });
             const workerUrl = URL.createObjectURL(blob);
+
+            // Create the worker
             imageWorker = new Worker(workerUrl);
 
+            // Set up the message handler
             imageWorker.onmessage = function(e) {
                 const { segmentedImages, error, progress } = e.data;
-                 if (!workerActive) return; // Ignore messages from terminated workers
 
                 if (error) {
                     jsOutput.innerHTML = `Worker Error: ${error}`;
                     console.error('Worker error:', error);
-                     terminateWorkerAndAnimation(); // Stop on error
-                    trackError('worker', error);
                     return;
                 }
 
-                if (segmentedImages && segmentedImages.length > 0 && ctx) {
-                    ctx.putImageData(segmentedImages[0], 0, 0); // Draw result
+                if (segmentedImages && segmentedImages.length > 0) {
+                    // Draw the segmented image to the canvas
+                    ctx.putImageData(segmentedImages[0], 0, 0);
+
+                    // Update progress if available
                     if (progress !== undefined) {
-                        // Optional: Update progress UI if needed
+                        // const progressPercent = Math.round(progress * 100);
+                        // jsOutput.innerHTML = `Processing: ${progressPercent}% complete`;
                     }
                 }
             };
 
-             imageWorker.onerror = function(errorEvent) {
-                 console.error("Unhandled Worker Error:", errorEvent);
-                 jsOutput.innerHTML = `Unhandled Worker Error: ${errorEvent.message}`;
-                 terminateWorkerAndAnimation(); // Stop on error
-                 trackingData.workerErrors++;
-                 trackError('worker', errorEvent.message);
-
-             };
-
             workerActive = true;
-            jsOutput.innerHTML = 'Worker created. Starting animation...';
-            startAnimation(); // Start the animation loop
+            jsOutput.innerHTML = 'Worker created successfully. Starting animation...';
 
+            // Start the animation
+            startAnimation();
         } catch (error) {
             jsOutput.innerHTML = `Error creating worker: ${error.message}`;
             console.error('Worker creation error:', error);
-            trackError('worker_create', error.message);
 
+            trackingData.workerErrors++;
+            trackError('worker', errorEvent.message); // Potential variable name issue here
+            
+      
         }
     }
 
-
-
-    // function startAnimation() {
-    //     if (!imageWorker || !originalImageData || !workerActive) return;
-
-    //     // Define the animation frame function
-    //     const animate = () => {
-    //         if (!workerActive) return;
-
-    //         // Get the image count from the input
-    //         const imageCount = parseInt(imageCountInput.value, 10) || 5;
-
-    //         // Calculate how many iterations to use based on image count
-    //         // This scales the animation duration with the number of images
-    //         const iterations = imageCount * 24; // 24 frames per image
-
-    //         // Ensure selectedRegions is properly formatted
-    //         // Convert the selectedRegions into the format expected by the worker
-    //         let formattedSelectedRegions;
-
-    //         if (!selectedRegions || !selectedRegions.length) {
-    //             // Create a default region that includes all pixels
-    //             const totalPixels = originalImageData.width * originalImageData.height;
-    //             const allPixelsRegion = [];
-    //             for (let i = 0; i < totalPixels; i++) {
-    //                 allPixelsRegion.push(i);
-    //             }
-    //             formattedSelectedRegions = [allPixelsRegion];
-    //         } else {
-    //             // Convert the existing selectedRegions to proper format if needed
-    //             formattedSelectedRegions = selectedRegions;
-
-    //             // If selectedRegions is already an array of pixel indices, wrap it in another array
-    //             if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
-    //                 formattedSelectedRegions = [selectedRegions];
-    //             }
-
-    //             // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
-    //             if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' &&
-    //                 (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
-    //                 const convertedRegions = [];
-    //                 const region = [];
-
-    //                 for (let i = 0; i < selectedRegions[0].length; i++) {
-    //                     if (selectedRegions[0][i] === 1) {
-    //                         region.push(i);
-    //                     }
-    //                 }
-
-    //                 convertedRegions.push(region);
-    //                 formattedSelectedRegions = convertedRegions;
-    //             }
-    //         }
-
-    //         // Send data to the worker
-    //         imageWorker.postMessage({
-    //             imageData: originalImageData,
-    //             selectedRegions: selectedRegions, // Now correctly formatted
-    //             value: 1,
-    //             value5: iterations,
-    //             reset: false
-    //         });
-
-    //         // Request the next frame
-    //         animationFrameId = requestAnimationFrame(animate);
-    //     };
-
-    //     // Start the animation
-    //     animate();
-    // }
-
-    // Update the processed images grid
-  
-  
-
     function startAnimation() {
-        if (!imageWorker || !originalImageData || !workerActive || !selectedRegions) {
-            console.log("Animation prerequisites not met. Worker:", !!imageWorker, "ImageData:", !!originalImageData, "Active:", workerActive, "Regions:", !!selectedRegions);
-            // Optionally clear the animation frame if it was somehow set
-            if (animationFrameId) {
-               cancelAnimationFrame(animationFrameId);
-               animationFrameId = null;
-            }
-            return;
-        }
+        if (!imageWorker || !originalImageData || !workerActive) return;
 
-        // --- Get necessary parameters ---
-        const imageCount = parseInt(imageCountInput.value, 10) || 5;
-        const iterations = imageCount * 24; // Example: 24 frames per logical "image"
-
-        // --- Prepare data for the worker ---
-        // Ensure selectedRegions is correctly formatted (should be an array containing one array of indices)
-         let formattedSelectedRegions = selectedRegions;
-         if (!Array.isArray(formattedSelectedRegions?.[0])) {
-             console.warn("SelectedRegions format invalid, creating default.", selectedRegions);
-             // Create a default region if needed (e.g., all non-transparent pixels)
-               const totalPixels = originalImageData.width * originalImageData.height;
-               const allPixelsRegion = [];
-               const imgData = originalImageData.data;
-               for (let i = 0; i < totalPixels; i++) {
-                   if (imgData[i*4+3] > 0) allPixelsRegion.push(i);
-               }
-               formattedSelectedRegions = [allPixelsRegion];
-         }
-
-
-        const messageData = {
-            imageData: originalImageData,
-            selectedRegions: formattedSelectedRegions,
-            value: 1, // Or other parameters your worker expects
-            value5: iterations, // Total iterations
-            reset: false // Standard animation frame
-        };
-
-        // --- Animation loop function ---
+        // Define the animation frame function
         const animate = () => {
-            if (!workerActive || !imageWorker) return; // Stop if worker terminated
+            if (!workerActive) return;
 
-            try {
-                // Send data to the worker for the next frame
-                imageWorker.postMessage(messageData);
-            } catch (postError) {
-                console.error("Error posting message to worker:", postError);
-                jsOutput.innerHTML = `Error communicating with worker: ${postError.message}`;
-                terminateWorkerAndAnimation(); // Stop if communication fails
-                 trackError('worker_comm', postError.message);
-                return; // Exit loop
+            // Get the image count from the input
+            const imageCount = parseInt(imageCountInput.value, 10) || 5;
+
+            // Calculate how many iterations to use based on image count
+            // This scales the animation duration with the number of images
+            const iterations = imageCount * 24; // 24 frames per image
+
+            // Ensure selectedRegions is properly formatted
+            // Convert the selectedRegions into the format expected by the worker
+            let formattedSelectedRegions;
+
+            if (!selectedRegions || !selectedRegions.length) {
+                // Create a default region that includes all pixels
+                const totalPixels = originalImageData.width * originalImageData.height;
+                const allPixelsRegion = [];
+                for (let i = 0; i < totalPixels; i++) {
+                    allPixelsRegion.push(i);
+                }
+                formattedSelectedRegions = [allPixelsRegion];
+            } else {
+                // Convert the existing selectedRegions to proper format if needed
+                formattedSelectedRegions = selectedRegions;
+
+                // If selectedRegions is already an array of pixel indices, wrap it in another array
+                if (Array.isArray(selectedRegions) && !Array.isArray(selectedRegions[0])) {
+                    formattedSelectedRegions = [selectedRegions];
+                }
+
+                // If selectedRegions is an array of 1s (boolean mask format), convert to pixel indices
+                if (Array.isArray(selectedRegions[0]) && typeof selectedRegions[0][0] === 'number' &&
+                    (selectedRegions[0][0] === 0 || selectedRegions[0][0] === 1)) {
+                    const convertedRegions = [];
+                    const region = [];
+
+                    for (let i = 0; i < selectedRegions[0].length; i++) {
+                        if (selectedRegions[0][i] === 1) {
+                            region.push(i);
+                        }
+                    }
+
+                    convertedRegions.push(region);
+                    formattedSelectedRegions = convertedRegions;
+                }
             }
+
+            // Send data to the worker
+            imageWorker.postMessage({
+                imageData: originalImageData,
+                selectedRegions: selectedRegions, // Now correctly formatted
+                value: 1,
+                value5: iterations,
+                reset: false
+            });
 
             // Request the next frame
             animationFrameId = requestAnimationFrame(animate);
         };
 
-        // --- Start the animation loop ---
-         console.log("Starting animation loop...");
-         // Clear any previous frame ID before starting a new loop
-         if (animationFrameId) {
-             cancelAnimationFrame(animationFrameId);
-         }
-        animate(); // Start the first frame
+        // Start the animation
+        animate();
     }
 
-    if (jsEditor.value.trim() !== '') {
-        // Decide whether to plot or run worker based on some initial state or default
-        // For now, let's default to running the worker on initial load if JS code exists
-         console.log("Initial JS code found, running as worker...");
-         runWorkerCode();
-     } else {
-        // Or maybe just load the image without starting the worker if no JS code
-        console.log("No initial JS code, loading base image only...");
-         const htmlContainer = document.createElement('div');
-        htmlContainer.innerHTML = htmlEditor.value;
-        const styleElement = document.createElement('style');
-        styleElement.textContent = cssEditor.value;
-        htmlOutput.appendChild(styleElement);
-        htmlOutput.appendChild(htmlContainer);
-        loadImageForWorker(htmlContainer); // Just load image, don't start worker automatically
-     }
-
-  
-     function preprocessEquation(str) {
-        // Replace common representations of pi and theta
-        str = str.replace(/π/g, 'pi')
-                 .replace(/θ/g, 'theta');
-       // Convert x2 -> x^2 etc. (handle potential lookbehind issues)
-       try {
-           str = str.replace(/(?<![a-zA-Z0-9\.])([xytr])(\d+)/g, '$1^$2'); // Removed 'k' for now
-       } catch (e) {
-            console.warn("Regex lookbehind might not be supported.");
-            str = str.replace(/\b([xytr])(\d+)\b/g, '$1^$2'); // Removed 'k' for now
-       }
-       // Basic implicit multiplication (can be risky)
-       // str = str.replace(/(\d|\))(\s*)([a-zA-Z\(])/g, '$1*$3');
-       // str = str.replace(/([a-zA-Z])(\s+)([a-zA-Z\(])/g, '$1*$3');
-   
-       return str;
-   }
-   
-   // --- Helper: Parses a SINGLE equation string for functionPlot ---
-   // Returns an object { data: plotData | null, error: errorMessage | null }
-   function parseSingleEquationForPlot(singleEqStr) {
-       let rawEq = singleEqStr.trim();
-       if (!rawEq) {
-           return { data: null, error: null }; // Ignore empty lines/parts
-       }
-   
-       let convertedInput = rawEq;
-       let conversionError = null;
-   
-       // Try Nerdamer LaTeX conversion first
-       try {
-           // Basic check if it looks like LaTeX
-           if (rawEq.includes('\\') || rawEq.includes('{') || rawEq.includes('^')) {
-                convertedInput = nerdamer.fromLaTeX(rawEq).toString();
-                // Nerdamer might wrap in unnecessary parens
-                if (convertedInput.startsWith('(') && convertedInput.endsWith(')')) {
-                    try {
-                        // Check if inner part is valid mathjs expression
-                        math.parse(convertedInput.substring(1, convertedInput.length - 1));
-                        convertedInput = convertedInput.substring(1, convertedInput.length - 1);
-                    } catch (e) { /* Keep outer parens if inner isn't valid */ }
-                }
-                console.log(`Raw: "${rawEq}", Nerdamer attempt: "${convertedInput}"`);
-           } else {
-               convertedInput = rawEq; // Assume not LaTeX if no common chars
-           }
-       } catch (latexError) {
-           convertedInput = rawEq; // Fallback to raw input
-           conversionError = `(Input "${rawEq}" possibly invalid LaTeX: ${latexError.message})`;
-            console.warn(`Nerdamer failed for "${rawEq}": ${latexError.message}`);
-       }
-   
-       let equationStr = preprocessEquation(convertedInput);
-       let plotData = null;
-       let parseError = null;
-   
-       try {
-            // Check for keywords first (Parametric, Polar, Implicit)
-            // Use explicit keywords to avoid ambiguity
-           if (equationStr.toLowerCase().startsWith('parametric:')) {
-               const definition = equationStr.substring('parametric:'.length).trim();
-               const parts = definition.split(',');
-               let xFn = null, yFn = null;
-               parts.forEach(part => {
-                   const eqParts = part.split('=');
-                   if (eqParts.length === 2) {
-                       const variable = eqParts[0].trim().toLowerCase();
-                       const expression = eqParts[1].trim();
-                       if (variable === 'x') xFn = expression;
-                       else if (variable === 'y') yFn = expression;
-                   }
-               });
-                if (!xFn || !yFn) throw new Error("Parametric format error. Use 'parametric: x=f(t), y=g(t)'.");
-                // Test parse
-                math.compile(xFn).evaluate({t: 1});
-                math.compile(yFn).evaluate({t: 1});
-                plotData = { fnType: 'parametric', x: xFn, y: yFn, graphType: 'polyline' };
-   
-           } 
-           else if (equationStr.toLowerCase().startsWith('polar:')) {
-                const definition = equationStr.substring('polar:'.length).trim();
-                if (!definition.toLowerCase().startsWith('r=')) throw new Error("Polar format error. Use 'polar: r = f(theta)'.");
-                const rFn = definition.substring(definition.indexOf('=') + 1).trim();
-                // Test parse
-                math.compile(rFn).evaluate({theta: 1});
-                plotData = { fnType: 'polar', r: rFn, graphType: 'polyline' };
-   
-           }
-            else if (equationStr.toLowerCase().startsWith('implicit:')) {
-                const definition = equationStr.substring('implicit:'.length).trim();
-                const parts = definition.split('=').map(p => p.trim());
-                let implicitFn;
-                if (parts.length === 2) {
-                    implicitFn = `(${parts[0]}) - (${parts[1]})`; // f(x,y) = g(x,y) -> f-g=0
-                } else if (parts.length === 1) {
-                    implicitFn = parts[0]; // Assume f(x,y) = 0
-                } else {
-                     throw new Error("Implicit format error. Use 'implicit: f(x,y) = g(x,y)' or 'implicit: f(x,y)'.");
-                }
-                // Test parse
-                math.compile(implicitFn).evaluate({x: 1, y: 1});
-                plotData = { fnType: 'implicit', fn: implicitFn };
-   
-           }
-            else if (equationStr.includes('=')) {
-                const parts = equationStr.split('=').map(part => part.trim());
-               if (parts.length === 2) {
-                   let lhs = parts[0]; let rhs = parts[1];
-                   // Basic y = f(x)
-                   if (lhs.toLowerCase() === 'y' && !/\by\b/i.test(rhs)) { // Check rhs doesn't contain y
-                        math.compile(rhs).evaluate({x: 1}); // Test parse
-                        plotData = { fn: rhs, graphType: 'polyline' };
-                   }
-                   // Basic x = f(y) -> treat as implicit x - f(y) = 0
-                   else if (lhs.toLowerCase() === 'x' && !/\bx\b/i.test(rhs)) { // Check rhs doesn't contain x
-                        const implicitFn = `x - (${rhs})`;
-                        math.compile(implicitFn).evaluate({x: 1, y: 1}); // Test parse
-                        plotData = { fnType: 'implicit', fn: implicitFn };
-                   }
-                   // General implicit: f(x,y) = g(x,y) -> f - g = 0
-                   else {
-                        const implicitFn = `(${lhs}) - (${rhs})`;
-                        math.compile(implicitFn).evaluate({x: 1, y: 1}); // Test parse
-                        plotData = { fnType: 'implicit', fn: implicitFn };
-                   }
-               } else { throw new Error("Invalid equation format. Expected 'LHS = RHS'."); }
-           } 
-           else {
-            const containsX = /\bx\b/i.test(equationStr);
-            const containsY = /\by\b/i.test(equationStr);
-
-            if (containsX && containsY) {
-                // **** ASSUME IMPLICIT f(x,y) = 0 ****
-                // Test parse syntax by compiling with dummy values
-                math.compile(equationStr).evaluate({x: 1, y: 1});
-                // If syntax is ok, set up for functionPlot
-                console.log(`Interpreting "${rawEq}" as implicit function = 0`); // Optional log
-                plotData = { fnType: 'implicit', fn: equationStr };
-
-            } else if (containsX) {
-                // Assume y = f(x) if only x is present
-                math.compile(equationStr).evaluate({x: 1}); // Test parse syntax
-                plotData = { fn: equationStr, graphType: 'polyline' };
-
-            } else {
-                // Contains only y, constants, or nothing understandable as a plot
-                 throw new Error("Ambiguous input. Provide a function of x (e.g., 'sin(x)'), or an equation with '=' (e.g., 'y=x^2', 'x^2+y^2=1').");
-            }
-
-        
-        
-        }
-   
-       } catch(error) {
-           console.error(`Parsing Error for "${rawEq}" (processed as "${equationStr}"):`, error);
-           parseError = `Error processing "${rawEq}": ${error.message}`;
-           if (conversionError) { parseError += ` ${conversionError}`; }
-           plotData = null;
-       }
-   
-       return { data: plotData, error: parseError };
-   }
-   
-
+    // Update the processed images grid
     function updateProcessedImagesGrid() {
         if (!originalImageData) return;
 
@@ -3050,8 +1980,6 @@ trackevent('edit', 'html');
 
             // Create canvas
             const canvas = document.createElement('canvas');
-            canvas.id = "1010101001101010101010101001"
-
             canvas.width = originalImageData.width;
             canvas.height = originalImageData.height;
 

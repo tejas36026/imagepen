@@ -1,17 +1,15 @@
-// tutorial.js - Interactive Tutorial System for AI Code Editor
-
-// Global variables for tutorial state
 let tutorialActive = false;
 let currentTutorialStep = 0;
 let tutorialSteps = [];
 let highlightedElement = null;
-let highlightOverlay = null; // Renamed for clarity
+let highlightOverlay = null;
 let tutorialTooltip = null;
 let tutorialControls = null;
 let videoElement = null;
 let videoModal = null;
+let selectionListenerActive = false; // Flag to track if the selection listener is active
+let currentSelectionListener = null; // Store the listener function for removal
 
-// Initialize the tutorial system
 document.addEventListener('DOMContentLoaded', function() {
     // Create tutorial UI elements
     createTutorialUI();
@@ -357,7 +355,6 @@ function addTutorialButton() {
     }
 }
 
-
 // Simplified interactivity setup - only handles clicks on specific elements if needed
 // function setupMouseInteractivity() {
 //     document.addEventListener('click', function(e) {
@@ -386,6 +383,9 @@ function addTutorialButton() {
 
 function startTutorial() {
     // Ensure hamburger is closed if open
+    tutorialActive = true;
+    currentTutorialStep = 0;
+
     const hamburgerDropdown = document.getElementById('hamburgerDropdown');
     if (hamburgerDropdown && hamburgerDropdown.classList.contains('show')) {
         hamburgerDropdown.classList.remove('show');
@@ -404,80 +404,17 @@ function startTutorial() {
             position: 'bottom left-align',
             pulse: true,
         },
+  
         {
-            element: '.dropdown-list', // Target the dropdown list that appears
-            title: 'Select a Library',
-            content: 'Choose any library from this list to add to your project. Click on one of these options.',
-            position: 'bottom bottom-align',
-          
-            // This step will appear after the library button is clicked
+            element: '#jsEditor', // Highlight the editor where selection happens
+            title: 'Quick Code Analysis',
+            content: 'Try selecting some code (e.g., `function setup()`) in this JS editor. A tooltip will appear near your mouse, allowing you to quickly analyze the selected snippet with AI.',
+            position: 'top', // Position tooltip relative to editor
+            actionRequired: true,    // User needs to perform an action
+            requiresSelection: true, // Custom flag for this specific type of action
+            pulse: true              // Pulse the editor highlight
         },
-        {
-            element: '#confirmLibraryBtn', // Assuming there's a confirm button in the dropdown
-            title: 'Confirm Selection',
-            content: 'Click "OK" to add the selected library to your project.',
-            position: 'bottom',
-            pulse: true,
-            
-   
-        },
-        // Continue with the rest of your tutorial steps from here
-        {
-            element: '.header .logo', // Target logo in the header
-            title: 'Welcome to AI Code Editor!',
-            content: 'Now that you\'ve added a library, let\'s continue exploring the interface. Use the Next/Previous buttons below or press Arrow Keys.',
-            position: 'bottom left-align', // Position relative to logo
-            video: 'intro', // Optional video slug
-            showVideo: false // Set to true to show button
-        },
-        {
-            element: '.header .logo', // Target logo in the header
-            title: 'Welcome to AI Code Editor!',
-            content: 'This tutorial guides you through the interface. Use the Next/Previous buttons below or press Arrow Keys.',
-            position: 'bottom left-align', // Position relative to logo
-            video: 'intro', // Optional video slug
-            showVideo: false // Set to true to show button
-        },
-        {
-            element: '#jsEditor', // Target the JS editor textarea
-            title: 'JavaScript Editor',
-            content: 'This is your main coding area for JavaScript animations. It\'s on the right side.',
-            position: 'left top-align', // Position relative to the editor
-        },
-         {
-            element: '#jsDeepseekBtn', // Target the AI button for JS
-            title: 'AI Code Assistance (JS)',
-            content: 'Click this button above the JS editor to get AI help with your JavaScript code.',
-            position: 'bottom left-align',
-            pulse: true
-        },
-        {
-            element: '#promptInput', // Target the prompt input in the header
-            title: 'AI Prompt Input',
-            content: 'Enter instructions here for the AI. Describe the animation or changes you want.',
-            position: 'bottom',
-            interactive: false // Input field, interaction is typing
-        },
-        {
-            element: '#magicBtn', // Target the Generate button in the header
-            title: 'Generate Code',
-            content: 'Click here after entering your prompt to let the AI generate or modify the code in the JS editor.',
-            position: 'bottom right-align',
-            pulse: true
-        },
-         {
-            element: '#imageUploadBtn', // Target the upload button in the header
-            title: 'Upload Image',
-            content: 'Click to upload an image for animation. You can also drag & drop or paste images onto the page.',
-            position: 'bottom right-align'
-        },
-        {
-            element: '#htmlOutput', // Target the main preview area
-            title: 'Live Preview',
-            content: 'Your HTML and animations appear here on the left side. Use Refresh to update.',
-            position: 'right top-align', // Position relative to the preview
-            interactive: false
-        },
+
         {
             element: '#refreshPreview', // Target the refresh button in viewer header
             title: 'Refresh Preview',
@@ -485,12 +422,17 @@ function startTutorial() {
             position: 'bottom right-align',
             pulse: true
         },
+    
+ 
+
          {
-            element: '#jsLibraryBtn', // Target the JS library button
-            title: 'JavaScript Libraries',
-            content: 'Select pre-built JavaScript libraries (like GSAP, Three.js) here to use in your project.',
-            position: 'bottom left-align'
+            element: '#imageUploadBtn', // Target the upload button in the header
+            title: 'Upload Image',
+            content: 'Click to upload an image for animation. You can also drag & drop or paste images onto the page.',
+            position: 'bottom right-align'
         },
+
+   
          {
             element: '#recordButton', // Target the record button
             title: 'Record Animation',
@@ -503,60 +445,10 @@ function startTutorial() {
             content: 'Click to view the preview panel in fullscreen mode.',
             position: 'bottom'
         },
-        {
-            element: '#hamburgerBtn', // Target the hamburger button itself
-            title: 'Settings Menu',
-            content: 'Click this icon to open the settings menu for more options.',
-            position: 'bottom right-align',
-            interactive: false, // Make clicking hamburger the interaction?
-            // actionRequired: true // If user MUST click it to proceed
-        },
-        {
-            element: '#hamburgerDropdown .image-control-panel', // Target image count setting within dropdown
-            title: 'Image Frame Count',
-            content: 'Adjust the number of frames for generated GIF/video recordings here (inside settings menu).',
-            position: 'left top-align',
-            // preAction: () => document.getElementById('hamburgerBtn')?.click() // Ensure menu is open
-        },
-         {
-            element: '#toggleAdvancedBtn', // Target advanced toggle button
-            title: 'Advanced Mode',
-            content: 'Click this in the settings menu to show/hide the HTML, CSS editors, and the Console/CSS output tabs.',
-            position: 'left',
-            // preAction: () => document.getElementById('hamburgerBtn')?.click() // Ensure menu is open
-        },
+
         // --- Optional Steps for Advanced Mode Elements ---
-        // Uncomment and adjust if you guide user to enable Advanced Mode
-         // {
-         //     element: '#htmlEditor', // Target HTML editor (assuming Advanced Mode is on)
-         //     title: 'HTML Editor',
-         //     content: 'Edit your HTML structure here (visible in Advanced Mode).',
-         //     position: 'right',
-         //     // Requires Advanced Mode to be active
-         // },
-         // {
-         //     element: '#cssEditor', // Target CSS editor (assuming Advanced Mode is on)
-         //     title: 'CSS Editor',
-         //     content: 'Style your elements using CSS here (visible in Advanced Mode).',
-         //     position: 'right',
-         //     // Requires Advanced Mode to be active
-         // },
-        // {
-        //     element: '.css-js-viewer-column .tab[data-tab="console"]', // Target Console tab
-        //     title: 'Console Output',
-        //     content: 'View JavaScript errors and logs here (visible in Advanced Mode). Click the "Console" tab if needed.',
-        //     position: 'top',
-        //     // Requires Advanced Mode to be active
-        // },
-        // --- End Optional Steps ---
-        {
-            element: 'body', // Target the whole page
-            title: 'Tutorial Complete!',
-            content: 'You\'ve learned the basics! Experiment with coding, AI generation, and image uploads. Happy creating!',
-            position: 'center',
-            video: 'complete', // Optional completion video
-            showVideo: false // Set to true to show button
-        }
+
+ 
     ];
 
     // Update total steps counter
@@ -571,8 +463,21 @@ function startTutorial() {
     tutorialTooltip.style.display = 'block'; // Ensure tooltip is visible
 }
 
+function removeTutorialSelectionListener() {
+    if (selectionListenerActive && currentSelectionListener) {
+        const editor = document.getElementById('jsEditor');
+        if (editor) {
+            editor.removeEventListener('mouseup', currentSelectionListener);
+        }
+        selectionListenerActive = false;
+        currentSelectionListener = null;
+        console.log("Tutorial selection listener removed.");
+    }
+}
 
 function showTutorialStep(stepIndex) {
+    removeTutorialSelectionListener(); // IMPORTANT: Call this at the start
+
     if (!tutorialActive || stepIndex < 0 || stepIndex >= tutorialSteps.length) {
         if (tutorialActive) endTutorial(); // End only if it was active
         return;
@@ -634,7 +539,7 @@ function showTutorialStep(stepIndex) {
         if (step.pulse) {
             highlightedElement.classList.add('pulse');
         }
-        highlightedElement.style.cssText = "margin-top: 0px !important; position: fixed;";
+        // highlightedElement.style.cssText = "margin-top: 0px !important; position: fixed;";
 
         // Position the highlight cutout
         highlightedElement.style.position = 'fixed'; // Use fixed position relative to viewport
@@ -644,6 +549,17 @@ function showTutorialStep(stepIndex) {
         highlightedElement.style.height = `${rect.height}px`;
 
         // Add highlight element to the body (it will sit above the overlay)
+        document.body.appendChild(highlightedElement);
+        if (step.requiresSelection) {
+            highlightedElement.style.pointerEvents = 'none';
+        } else {
+            // Keep the default ('auto') for steps where the highlight might be the interactive part,
+            // or if you need hover effects on the highlight border (though you don't seem to have those).
+            // If no steps need the highlight itself to be interactive, you could potentially
+            // set pointer-events: none in the main CSS for .tutorial-highlight.
+            highlightedElement.style.pointerEvents = 'auto'; // Explicitly set default
+        }
+
         document.body.appendChild(highlightedElement);
 
         // Add interactive class to the *actual* target element if needed
@@ -692,23 +608,78 @@ function showTutorialStep(stepIndex) {
 
     // If action required, disable 'Next' until interaction occurs (simplified approach)
     // This needs more robust implementation if interaction isn't just clicking the element
+     // --- Specific logic for `actionRequired` steps ---
      if (step.actionRequired) {
-       document.getElementById('tutorialNext').disabled = true;
-       // Add a listener to the target element or document to re-enable 'Next'
-       // Example (very basic - might need specific listeners):
-       const enableNext = () => {
-           if(tutorialActive && currentTutorialStep === stepIndex) {
-               document.getElementById('tutorialNext').disabled = false;
-               targetElement?.removeEventListener('click', enableNext, true); // Clean up
-               document.removeEventListener('input', enableNext, true); // Clean up for input fields
-           }
-       };
-       targetElement?.addEventListener('click', enableNext, { capture: true, once: true });
-        // If it's an input field, maybe listen for input event
-        if (targetElement?.tagName === 'INPUT' || targetElement?.tagName === 'TEXTAREA') {
-             targetElement?.addEventListener('input', enableNext, { capture: true, once: true });
+        const nextButton = document.getElementById('tutorialNext');
+        nextButton.disabled = true; // Ensure it's disabled
+
+        if (step.requiresSelection && targetElement && targetElement.id === 'jsEditor') {
+            console.log(`Tutorial Step ${stepIndex}: Setting up listener for text selection in #jsEditor.`);
+             // Define the listener function *within this scope* to capture stepIndex correctly
+             currentSelectionListener = (event) => {
+                 // Double check we are still on the correct step and tutorial is active
+                 if (!tutorialActive || currentTutorialStep !== stepIndex) {
+                    console.log("Selection event fired, but tutorial state changed. Ignoring.");
+                    removeTutorialSelectionListener(); // Clean up listener if state is wrong
+                    return;
+                }
+
+                 const selection = window.getSelection();
+                 const selectedText = selection.toString().trim();
+                const tooltip = document.querySelector('.enhanced-selection-tooltip'); // Correct selector?
+
+                if (selectedText && tooltip && tooltip.style.display === 'block') {
+                    console.log(`Tutorial Step ${stepIndex}: Text selected ("${selectedText.substring(0, 20)}...") and tooltip visible. Enabling Next.`);
+                    nextButton.disabled = false;
+                    // IMPORTANT: Remove the listener *after* it has successfully triggered
+                    removeTutorialSelectionListener();
+                } else {
+                     // Log why it didn't trigger (e.g., no text, tooltip not visible)
+                     console.log(`Tutorial Step ${stepIndex}: Mouseup detected, but conditions not met (Selected: "${selectedText.substring(0, 10)}...", Tooltip found: ${!!tooltip}, Tooltip visible: ${tooltip && tooltip.style.display === 'block'})`);
+                }
+             };
+
+             targetElement.addEventListener('mouseup', currentSelectionListener);             selectionListenerActive = true; // Set the flag
+             selectionListenerActive = true; // Set the flag
+
+        } 
+        else if (targetElement) { // Handle standard clickable actions
+            // Add a listener to the target element or document to re-enable 'Next'
+             const enableNextOnClick = (event) => {
+                 // Check if the click was on or inside the target element
+                 if (targetElement.contains(event.target)) {
+                    if(tutorialActive && currentTutorialStep === stepIndex) {
+                       nextButton.disabled = false;
+                       targetElement.removeEventListener('click', enableNextOnClick, true); // Clean up THIS listener
+                       console.log(`Tutorial Step ${stepIndex}: Click detected on target. Enabling Next.`);
+                    }
+                 }
+             };
+             // Use capture phase to potentially catch clicks even if prevented by other scripts
+             targetElement.addEventListener('click', enableNextOnClick, { capture: true, once: true });
+             console.log(`Tutorial Step ${stepIndex}: Set up click listener for target element.`);
+
+             // If it's an input field, maybe listen for input event as well/instead
+             if (targetElement?.tagName === 'INPUT' || targetElement?.tagName === 'TEXTAREA') {
+                  const enableNextOnInput = () => {
+                       if(tutorialActive && currentTutorialStep === stepIndex) {
+                           nextButton.disabled = false;
+                           targetElement.removeEventListener('input', enableNextOnInput, true); // Clean up THIS listener
+                           console.log(`Tutorial Step ${stepIndex}: Input detected on target. Enabling Next.`);
+                       }
+                  };
+                  targetElement.addEventListener('input', enableNextOnInput, { capture: true, once: true });
+                  console.log(`Tutorial Step ${stepIndex}: Set up input listener for target element.`);
+             }
         }
-     }
+    }
+    if (step.postAction && typeof step.postAction === 'function') {
+        try {
+            step.postAction();
+        } catch (e) {
+            console.error("Error executing postAction for step:", stepIndex, e);
+        }
+    }
 }
 
 function handleVideoBtnClick(event) {
@@ -717,7 +688,6 @@ function handleVideoBtnClick(event) {
         playTutorialVideo(videoSection);
     }
 }
-
 
 function positionTooltip(targetElement, position = 'bottom') {
     if (!targetElement || targetElement === document.body || position === 'center') {
@@ -811,12 +781,13 @@ function positionTooltip(targetElement, position = 'bottom') {
     tutorialTooltip.className = `tutorial-tooltip ${positionClass} ${alignmentClass}`.trim(); // Add classes for arrow direction
 }
 
-
 function showNextTutorialStep() {
     if (!tutorialActive) return;
+    // Clean up listener *before* incrementing step
+    removeTutorialSelectionListener();
     currentTutorialStep++;
     if (currentTutorialStep >= tutorialSteps.length) {
-        endTutorial();
+        endTutorial(); // endTutorial also calls remove listener
     } else {
         showTutorialStep(currentTutorialStep);
     }
@@ -824,6 +795,8 @@ function showNextTutorialStep() {
 
 function showPreviousTutorialStep() {
      if (!tutorialActive) return;
+     removeTutorialSelectionListener();
+
     currentTutorialStep--;
     if (currentTutorialStep < 0) {
         currentTutorialStep = 0; // Stay on first step
@@ -834,6 +807,7 @@ function showPreviousTutorialStep() {
 function endTutorial() {
     if (!tutorialActive) return; // Prevent multiple calls
     tutorialActive = false;
+    removeTutorialSelectionListener();
 
     // Hide tutorial elements
     highlightOverlay.style.display = 'none';
@@ -845,9 +819,10 @@ function endTutorial() {
         highlightedElement.remove();
         highlightedElement = null;
     }
-     document.querySelectorAll('.tutorial-interactive-target').forEach(el => {
+    document.querySelectorAll('.tutorial-interactive-target').forEach(el => {
         el.classList.remove('tutorial-interactive-target');
      });
+
      document.querySelectorAll('.tutorial-code-edit-mode').forEach(el => {
         el.classList.remove('tutorial-code-edit-mode');
         el.removeAttribute('contenteditable');
@@ -856,21 +831,7 @@ function endTutorial() {
 
     // Optional: Show completion message (e.g., in console or a small notification)
     console.log("Tutorial finished!");
-     logToConsole("Tutorial Completed! 🎉 You can restart it from the settings menu.", "success");
-
-
-    // Re-enable normal hamburger menu behavior if it was modified
-     const hamburgerBtn = document.getElementById('hamburgerBtn');
-     const hamburgerDropdown = document.getElementById('hamburgerDropdown');
-     if (hamburgerBtn && hamburgerDropdown) {
-          // Remove any tutorial-specific listeners if added
-          // Restore original click listener if it was replaced
-     }
-
-     // Remove global listeners added by tutorial
-     document.removeEventListener('keydown', handleTutorialKeydown);
-     window.removeEventListener('resize', handleTutorialResize);
-}
+   }
 
 function playTutorialVideo(section) {
     // Map sections to actual video URLs (ensure these URLs are correct)

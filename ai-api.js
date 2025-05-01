@@ -153,123 +153,245 @@ function callAiApi(language, provider) {
   // Show loading indicator with animation
   const loadingInterval = showLoadingIndicator(outputArea);
 
-  fetch('https://tejas56789ce1.pythonanywhere.com/generate-code', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-          language: language,
-          htmlCode: htmlCode,
-          cssCode: cssCode,
-          jsCode: jsCode,
-          prompt: userPrompt || "Enhance this code with best practices and optimizations"
-      }),
-  })
-  .then(response => {
-      console.log("Response received:", response.status);
-      return response.json();
-  })
-  .then(data => {
-      console.log("Data received:", data);
+// --- IMPORTANT SECURITY WARNING ---
+// Storing your API key directly in frontend code is VERY RISKY.
+// Anyone can view it and potentially misuse it.
+// Consider using a backend proxy instead.
+// Replace 'YOUR_TOGETHER_API_KEY' with your actual key ONLY if you understand the risks.
+const TOGETHER_API_KEY = "07589fb47c69da2f5af8b4ecdee9b843614c5f76605e1706b1af22ea1dd728cd"; // <--- VERY INSECURE IN PRODUCTION
 
-      clearInterval(loadingInterval);
-      
-      function cleanGeneratedCode(code) {
-        // First, check if we have actual code content
-        if (!code || typeof code !== 'string') {
-          return '';
-        }
-      
-        let cleanedCode = code;
-        
-        // Step 1: Remove any descriptive text before the actual code
-        // This covers phrases like "for a solar system visualization:", "Here's the improved JS code:", etc.
-        cleanedCode = cleanedCode.replace(/^[\s\S]*?(?:(?:here\'s|this is|for a|here is).*?(?:code|visualization|implementation|solution).*?:)/i, '');
-        
-        // Step 2: If we have a markdown code block, extract just the code inside it
-        const codeBlockMatch = cleanedCode.match(/```(?:javascript|js|html|css)?([\s\S]*?)```/i);
-        if (codeBlockMatch && codeBlockMatch[1]) {
-          cleanedCode = codeBlockMatch[1].trim();
-        } else {
-          // If no markdown code block found, remove any remaining markdown syntax
-          cleanedCode = cleanedCode.replace(/```(?:javascript|js|html|css)?/gi, '');
-          cleanedCode = cleanedCode.replace(/```/gi, '');
-        }
-        
-        // Step 3: Trim whitespace at start and end
-        cleanedCode = cleanedCode.trim();
-        
-        // Step 4: Check if the code starts with common code patterns
-        // If not, it might still have descriptive text at the beginning
-        if (!cleanedCode.match(/^(self\.|function|const|let|var|\/\/|\/\*|import|export|class|if|for|while)/i)) {
-          // Try to find the first occurrence of a code pattern and remove everything before it
-          const codeStartMatch = cleanedCode.match(/(self\.|function|const|let|var|\/\/|\/\*|import|export|class|if|for|while)/i);
-          if (codeStartMatch && codeStartMatch.index > 0) {
+// Assume these variables are defined elsewhere in your JS code:
+// let language = 'js'; // or 'html', 'css'
+// let htmlCode = editorHtml.getValue(); // Example: Get code from editors
+// let cssCode = editorCss.getValue();
+// let jsCode = editorJs.getValue();
+// let userPrompt = document.getElementById('userPromptInput').value; // Example
+// let loadingInterval; // Assume this is set when loading starts
+// let editor = /* reference to your code editor instance */;
+// let outputArea = document.getElementById('output'); // Example
+// let useCreatorApiKey = true; // Assuming direct call means using the main key
+// let credits = parseInt(localStorage.getItem('credits') || '0'); // Example
+// let provider = 'Together AI';
+// function typeIntoEditor(editorInstance, text, callback) { /* definition elsewhere */ }
+// function mockAiResponse(lang, prov, ed, out, cred, interval) { /* definition elsewhere */ }
+
+
+// --- Function to clean the AI-generated code (same as before) ---
+function cleanGeneratedCode(code) {
+    // First, check if we have actual code content
+    if (!code || typeof code !== 'string') {
+        return '';
+    }
+
+    let cleanedCode = code;
+
+    // Step 1: Remove preamble text
+    cleanedCode = cleanedCode.replace(/^\s*.*?```(?:javascript|js|html|css)?\s*/i, '```');
+    cleanedCode = cleanedCode.replace(/^\s*.*?(?:here is|here's|the improved|enhanced|updated)\s+(?:the\s+)?(?:javascript|js|html|css)\s+code:?\s*/i, '');
+
+    // Step 2: Extract code from markdown block or remove markers
+    const codeBlockMatch = cleanedCode.match(/```(?:javascript|js|html|css)?([\s\S]*?)```/i);
+    if (codeBlockMatch && codeBlockMatch[1]) {
+        cleanedCode = codeBlockMatch[1].trim();
+    } else {
+        cleanedCode = cleanedCode.replace(/^```(?:javascript|js|html|css)?\s*/i, '');
+        cleanedCode = cleanedCode.replace(/\s*```\s*$/i, '');
+    }
+
+    // Step 3: Trim whitespace
+    cleanedCode = cleanedCode.trim();
+
+    // Step 4: Fallback check for remaining text (optional)
+    if (!cleanedCode.match(/^(?:function|const|let|var|\/\/|\/\*|import|export|class|if|for|while|<|@|\.|#)/i)) {
+        const codeStartMatch = cleanedCode.match(/(?:function|const|let|var|\/\/|\/\*|import|export|class|if|for|while|<|@|\.|#)/i);
+        if (codeStartMatch && codeStartMatch.index > 0) {
             cleanedCode = cleanedCode.substring(codeStartMatch.index);
-          }
         }
-        
-        return cleanedCode;
-      }
-      
-      // Then when processing the API response data:
-      let cleanedCode = cleanGeneratedCode(data.generatedCode);
-      console.log('cleanedCode :>> ', cleanedCode);
-      // Update the editor with the cleaned generated code using typing effect
-      typeIntoEditor(editor, cleanedCode, () => {
-        // Trigger localStorage save after typing is complete
-        editor.dispatchEvent(new Event('input'));
-        
-        // Run the code to see changes
-        document.getElementById('runCode').click();
-      });
-      
-      // Always deduct credits when using the creator's API
-      if (useCreatorApiKey) {
-          const newCredits = Math.max(0, credits - 1);
-          localStorage.setItem('credits', newCredits);
-          document.getElementById('creditCount').textContent = `${newCredits} credits`;
-          
-          // If credits reach 0, show purchase modal
-          if (newCredits === 0) {
-              setTimeout(() => {
-                  document.getElementById('creditsModal').style.display = 'flex';
-              }, 500);
-          }
-      }
-      
-      // Show success message
-      outputArea.innerHTML = `<div style="color: var(--success-color); padding: 10px; border-radius: 4px; background: rgba(0,255,0,0.1)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-        Successfully generated ${language.toUpperCase()} code with ${provider}
-      </div>`;
-  })
-  .catch(error => {
-      console.error('Error calling API:', error);
-      
-      // Clear loading indicator
-      clearInterval(loadingInterval);
-      
-      outputArea.innerHTML = `<div style="color: #ff5252; padding: 10px; border-radius: 4px; background: rgba(255,0,0,0.1)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        Error: ${error.message}
-      </div>`;
-      
-      // Only use mock response if we have credits when using creator API
-      if (!useCreatorApiKey || (useCreatorApiKey && credits > 0)) {
-          mockAiResponse(language, provider, editor, outputArea, credits, loadingInterval);
-      } else {
-          outputArea.innerHTML = `<div style="color: #ff5252; font-weight: bold;">You need to purchase credits to use this feature.</div>`;
-          document.getElementById('creditsModal').style.display = 'flex';
-      }
-  });
+    }
+
+    // Step 5: Final trim
+    cleanedCode = cleanedCode.trim();
+
+    return cleanedCode;
+}
+// --- End of cleanGeneratedCode function ---
+
+
+// --- Direct Fetch Call to Together AI ---
+
+// Construct the prompt for the API
+const systemPrompt = "You are a helpful coding assistant that provides enhanced code.";
+const promptContent = `Enhance this ${language.toUpperCase()} code. No external images and no external links.
+Everything should be in one worker code. Create your own SVGs and provide the full code.
+
+Current HTML:
+\`\`\`html
+${htmlCode || "<!-- No HTML provided -->"}
+\`\`\`
+
+Current CSS:
+\`\`\`css
+${cssCode || "/* No CSS provided */"}
+\`\`\`
+
+Current JS:
+\`\`\`javascript
+${jsCode || "// No JS provided"}
+\`\`\`
+
+User instructions: ${userPrompt || "Enhance this code with best practices and optimizations"}
+
+Please improve the ${language.toUpperCase()} code specifically, based on the user instructions and the provided context.
+Only return the improved ${language.toUpperCase()} code without explanations or markdown formatting like \`\`\`${language}.`;
+
+// Together AI API endpoint
+const apiUrl = 'https://api.together.xyz/v1/chat/completions';
+
+fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${TOGETHER_API_KEY}` // Pass the API key here
+    },
+    body: JSON.stringify({
+        model: "deepseek-ai/DeepSeek-V3", // Or your desired model
+        messages: [
+            {
+                role: "system",
+                content: systemPrompt
+            },
+            {
+                role: "user",
+                content: promptContent
+            }
+        ],
+        max_tokens: 5576, // Adjust as needed
+        temperature: 0.7,
+        top_p: 0.7,
+        top_k: 50,
+        repetition_penalty: 1,
+        // Note: 'stop' sequences might be specific to the model.
+        // Check Together AI documentation for DeepSeek-V3 if needed.
+        // stop: ["<｜end of sentence｜>"], // Keep if necessary for the model
+        stream: false // Easier to handle non-streamed response directly in JS
+    }),
+})
+.then(response => {
+    console.log("Together AI Response Status:", response.status);
+    if (!response.ok) {
+        // Try to get more details from the error response body
+        return response.json().then(errData => {
+            // Throw an error with details from the API if available
+            throw new Error(`Together AI API Error ${response.status}: ${errData.error?.message || JSON.stringify(errData)}`);
+        }).catch(() => {
+            // Fallback if the error body isn't JSON or parsing fails
+            throw new Error(`Together AI API Error ${response.status}: ${response.statusText}`);
+        });
+    }
+    return response.json(); // Parse the JSON body of the successful response
+})
+.then(data => {
+    console.log("Together AI Data received:", data);
+
+    // Stop any loading indicator
+    if (loadingInterval) {
+        clearInterval(loadingInterval);
+    }
+
+    // Extract the generated code from the response structure
+    // Adjust this path based on the actual structure returned by Together AI's non-streamed chat completion
+    let generatedText = '';
+    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+        generatedText = data.choices[0].message.content;
+    } else {
+        console.error("Could not find generated content in the expected place in API response:", data);
+         throw new Error("API response format unexpected. Could not extract generated code.");
+    }
+
+    let cleanedCode = cleanGeneratedCode(generatedText);
+    console.log('Cleaned Code:', cleanedCode);
+
+    // Update the editor with the cleaned generated code using typing effect
+    typeIntoEditor(editor, cleanedCode, () => {
+        // Callback after typing
+        if (editor && typeof editor.dispatchEvent === 'function') {
+            editor.dispatchEvent(new Event('input'));
+        } else if (editor && typeof editor.save === 'function') {
+            editor.save();
+        }
+        const runButton = document.getElementById('runCode');
+        if (runButton) {
+            runButton.click();
+        }
+    });
+
+    // Frontend credit management is generally insecure, but kept from original logic
+    if (useCreatorApiKey) { // Assuming direct call always uses the main key
+        let currentCredits = parseInt(localStorage.getItem('credits') || '0');
+        const newCredits = Math.max(0, currentCredits - 1);
+        localStorage.setItem('credits', newCredits);
+        const creditCountElement = document.getElementById('creditCount');
+        if (creditCountElement) {
+            creditCountElement.textContent = `${newCredits} credits`;
+        }
+        if (newCredits === 0) {
+            setTimeout(() => {
+                const creditsModal = document.getElementById('creditsModal');
+                if (creditsModal) {
+                    creditsModal.style.display = 'flex';
+                }
+            }, 500);
+        }
+    }
+
+    // Show success message
+    if (outputArea) {
+        outputArea.innerHTML = `<div style="color: var(--success-color, #4CAF50); padding: 10px; border-radius: 4px; background: rgba(76, 175, 80, 0.1)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Successfully generated ${language.toUpperCase()} code with ${provider} (Direct Call)
+        </div>`;
+    }
+
+})
+.catch(error => {
+    console.error('Error calling Together AI API:', error);
+
+    // Clear loading indicator
+    if (loadingInterval) {
+        clearInterval(loadingInterval);
+    }
+
+    // Display error message
+    if (outputArea) {
+        outputArea.innerHTML = `<div style="color: var(--error-color, #f44336); padding: 10px; border-radius: 4px; background: rgba(244, 67, 54, 0.1)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Error: ${error.message}
+        </div>`;
+    }
+
+     // Credit check / Mock response logic on error (kept from original)
+     // Note: Frontend credit check is insecure.
+     let currentCredits = parseInt(localStorage.getItem('credits') || '0');
+     if (!useCreatorApiKey || (useCreatorApiKey && currentCredits > 0)) {
+         // Only call mock if you actually have a mock implementation
+         // mockAiResponse(language, provider, editor, outputArea, currentCredits, loadingInterval);
+         console.log("Attempting mock response (if configured).");
+     } else if (useCreatorApiKey && currentCredits <= 0) {
+         if (outputArea) {
+             outputArea.innerHTML += `<div style="color: var(--error-color, #f44336); font-weight: bold; margin-top: 10px;">You need credits to use this feature.</div>`;
+         }
+         const creditsModal = document.getElementById('creditsModal');
+         if (creditsModal) {
+             creditsModal.style.display = 'flex';
+         }
+     }
+});
 }
 
 window.addEventListener('DOMContentLoaded', () => {

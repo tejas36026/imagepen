@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Math Equation Input with Symbol Palette</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h2>Universal Math Equation Input with Symbol Palette</h2>
+    <div class="container">
+        <div class="input-area">
+            <h3>Enter or build your LaTeX equation:</h3>
+            
+            <textarea id="equationInput" oninput="renderEquation()"></textarea>
+            <div id="preview"></div>
+            <div id="error" class="error"></div>
+        </div>
+        <div class="palette-area">
+            <h3>Symbol Palette (Click to insert)</h3>
+            <!-- Container for the symbol palette -->
+            <div id="symbolPalette">
+                <!-- Symbol categories will be generated here by JavaScript -->
+            </div>
+        </div>
+    </div>
+    <script>
+        // --- Symbol Data ---
+        const symbolCategories = [
+             {
+                name: "Basic Operators",
+                symbols: [
+                    { display: '+', latex: '+' }, { display: '-', latex: '-' }, { display: '\\pm', latex: '\\pm ' },
+                    { display: '\\times', latex: '\\times ' }, { display: '\\div', latex: '\\div ' }, { display: '/', latex: '/' },
+                    { display: '\\ast', latex: '\\ast ' }, { display: '\\cdot', latex: '\\cdot ' }, { display: '=', latex: '=' },
+                    { display: '\\ne', latex: '\\ne ' }, { display: '\\approx', latex: '\\approx ' }, { display: '\\sim', latex: '\\sim ' },
+                    { display: '\\simeq', latex: '\\simeq ' }, { display: '\\cong', latex: '\\cong ' }, { display: '\\equiv', latex: '\\equiv ' },
+                    { display: '<', latex: '<' }, { display: '>', latex: '>' }, { display: '\\le', latex: '\\le ' },
+                    { display: '\\ge', latex: '\\ge ' }, { display: '\\ll', latex: '\\ll ' }, { display: '\\gg', latex: '\\gg ' },
+                    { display: '\\prec', latex: '\\prec ' }, { display: '\\succ', latex: '\\succ ' }, { display: '\\preceq', latex: '\\preceq ' },
+                    { display: '\\succeq', latex: '\\succeq ' },
+                ]
+            },
+            {
+                name: "Greek Letters (Lowercase)",
+                symbols: [
+                    { display: '\\alpha', latex: '\\alpha ' }, { display: '\\beta', latex: '\\beta ' }, { display: '\\gamma', latex: '\\gamma ' },
+                    { display: '\\delta', latex: '\\delta ' }, { display: '\\epsilon', latex: '\\epsilon ' }, { display: '\\varepsilon', latex: '\\varepsilon ' },
+                    { display: '\\zeta', latex: '\\zeta ' }, { display: '\\eta', latex: '\\eta ' }, { display: '\\theta', latex: '\\theta ' },
+                    { display: '\\vartheta', latex: '\\vartheta ' }, { display: '\\iota', latex: '\\iota ' }, { display: '\\kappa', latex: '\\kappa ' },
+                    { display: '\\lambda', latex: '\\lambda ' }, { display: '\\mu', latex: '\\mu ' }, { display: '\\nu', latex: '\\nu ' },
+                    { display: '\\xi', latex: '\\xi ' }, { display: 'o', latex: 'o' }, { display: '\\pi', latex: '\\pi ' },
+                    { display: '\\varpi', latex: '\\varpi ' }, { display: '\\rho', latex: '\\rho ' }, { display: '\\varrho', latex: '\\varrho ' },
+                    { display: '\\sigma', latex: '\\sigma ' }, { display: '\\varsigma', latex: '\\varsigma ' }, { display: '\\tau', latex: '\\tau ' },
+                    { display: '\\upsilon', latex: '\\upsilon ' }, { display: '\\phi', latex: '\\phi ' }, { display: '\\varphi', latex: '\\varphi ' },
+                    { display: '\\chi', latex: '\\chi ' }, { display: '\\psi', latex: '\\psi ' }, { display: '\\omega', latex: '\\omega ' }
+                ]
+            },
+            {
+                name: "Greek Letters (Uppercase)",
+                symbols: [
+                    { display: '\\Gamma', latex: '\\Gamma ' }, { display: '\\Delta', latex: '\\Delta ' }, { display: '\\Theta', latex: '\\Theta ' },
+                    { display: '\\Lambda', latex: '\\Lambda ' }, { display: '\\Xi', latex: '\\Xi ' }, { display: '\\Pi', latex: '\\Pi ' },
+                    { display: '\\Sigma', latex: '\\Sigma ' }, { display: '\\Upsilon', latex: '\\Upsilon ' }, { display: '\\Phi', latex: '\\Phi ' },
+                    { display: '\\Psi', latex: '\\Psi ' }, { display: '\\Omega', latex: '\\Omega ' }
+                ]
+            },
+            {
+                name: "Set Theory & Logic",
+                symbols: [
+                    { display: '\\in', latex: '\\in ' }, { display: '\\notin', latex: '\\notin ' }, { display: '\\ni', latex: '\\ni ' },
+                    { display: '\\subset', latex: '\\subset ' }, { display: '\\subseteq', latex: '\\subseteq ' }, { display: '\\supset', latex: '\\supset ' },
+                    { display: '\\supseteq', latex: '\\supseteq ' }, { display: '\\cap', latex: '\\cap ' }, { display: '\\cup', latex: '\\cup ' },
+                    { display: '\\setminus', latex: '\\setminus ' }, { display: '\\emptyset', latex: '\\emptyset ' }, { display: '\\varnothing', latex: '\\varnothing ' },
+                    { display: '\\forall', latex: '\\forall ' }, { display: '\\exists', latex: '\\exists ' }, { display: '\\nexists', latex: '\\nexists ' },
+                    { display: '\\neg', latex: '\\neg ' }, { display: '\\land', latex: '\\land ' }, { display: '\\lor', latex: '\\lor ' },
+                    { display: '\\top', latex: '\\top ' }, { display: '\\bot', latex: '\\bot ' }, { display: '\\vdash', latex: '\\vdash ' },
+                    { display: '\\models', latex: '\\models ' }, { display: '\\Rightarrow', latex: '\\Rightarrow ' }, { display: '\\Leftarrow', latex: '\\Leftarrow ' },
+                    { display: '\\Leftrightarrow', latex: '\\Leftrightarrow ' }, { display: '\\therefore', latex: '\\therefore ' }, { display: '\\because', latex: '\\because ' }
+                ]
+            },
+            {
+                name: "Calculus & Analysis",
+                symbols: [
+                    { display: '\\partial', latex: '\\partial ' }, { display: '\\int', latex: '\\int ' }, { display: '\\oint', latex: '\\oint ' },
+                    { display: '\\sum', latex: '\\sum ' }, { display: '\\prod', latex: '\\prod ' }, { display: '\\lim', latex: '\\lim_{x \\to \infty} ' },
+                    { display: '\\infty', latex: '\\infty ' }, { display: '\\nabla', latex: '\\nabla ' }, { display: '\\prime', latex: '\\prime ' },
+                    { display: '\\{f\'\\}', latex: 'f\' ' }, { display: '\\{f\'\'\\}', latex: 'f\'\' ' },
+                    { display: '\\mathrm{d}', latex: '\\mathrm{d}' } // For dx, dy etc.
+                ]
+            },
+             {
+                name: "Arrows",
+                symbols: [
+                    { display: '\\leftarrow', latex: '\\leftarrow ' }, { display: '\\rightarrow', latex: '\\rightarrow ' }, { display: '\\uparrow', latex: '\\uparrow ' },
+                    { display: '\\downarrow', latex: '\\downarrow ' }, { display: '\\leftrightarrow', latex: '\\leftrightarrow ' }, { display: '\\updownarrow', latex: '\\updownarrow ' },
+                    { display: '\\Leftarrow', latex: '\\Leftarrow ' }, { display: '\\Rightarrow', latex: '\\Rightarrow ' }, { display: '\\Uparrow', latex: '\\Uparrow ' },
+                    { display: '\\Downarrow', latex: '\\Downarrow ' }, { display: '\\Leftrightarrow', latex: '\\Leftrightarrow ' }, { display: '\\Updownarrow', latex: '\\Updownarrow ' },
+                    { display: '\\mapsto', latex: '\\mapsto ' }, { display: '\\longleftarrow', latex: '\\longleftarrow ' }, { display: '\\longrightarrow', latex: '\\longrightarrow ' },
+                    { display: '\\longleftrightarrow', latex: '\\longleftrightarrow ' }, { display: '\\Longleftarrow', latex: '\\Longleftarrow ' }, { display: '\\Longrightarrow', latex: '\\Longrightarrow ' },
+                    { display: '\\Longleftrightarrow', latex: '\\Longleftrightarrow ' }, { display: '\\nearrow', latex: '\\nearrow ' }, { display: '\\searrow', latex: '\\searrow ' },
+                    { display: '\\swarrow', latex: '\\swarrow ' }, { display: '\\nwarrow', latex: '\\nwarrow ' },
+                ]
+            },
+            {
+                name: "Brackets & Grouping",
+                symbols: [
+                    { display: '(', latex: '(' }, { display: ')', latex: ')' }, { display: '[', latex: '[' },
+                    { display: ']', latex: ']' }, { display: '\\{', latex: '\\{ ' }, { display: '\\}', latex: '\\} ' },
+                    { display: '|', latex: '|' }, { display: '\\|', latex: '\\| ' }, { display: '\\langle', latex: '\\langle ' },
+                    { display: '\\rangle', latex: '\\rangle ' }, { display: '\\lfloor', latex: '\\lfloor ' }, { display: '\\rfloor', latex: '\\rfloor ' },
+                    { display: '\\lceil', latex: '\\lceil ' }, { display: '\\rceil', latex: '\\rceil ' },
+                    { display: '\\left( \\right)', latex: '\\left(  \\right)' }, // Cursor goes in middle
+                    { display: '\\left[ \\right]', latex: '\\left[  \\right]' },
+                    { display: '\\left\\{ \\right\\}', latex: '\\left\\{  \\right\\}' },
+                     { display: '\\left| \\right|', latex: '\\left|  \\right|' },
+                ]
+            },
+            {
+                name: "Accents & Diacritics",
+                symbols: [
+                    { display: '\\hat{a}', latex: '\\hat{}' }, { display: '\\check{a}', latex: '\\check{}' }, { display: '\\breve{a}', latex: '\\breve{}' },
+                    { display: '\\acute{a}', latex: '\\acute{}' }, { display: '\\grave{a}', latex: '\\grave{}' }, { display: '\\tilde{a}', latex: '\\tilde{}' },
+                    { display: '\\bar{a}', latex: '\\bar{}' }, { display: '\\vec{a}', latex: '\\vec{}' }, { display: '\\dot{a}', latex: '\\dot{}' },
+                    { display: '\\ddot{a}', latex: '\\ddot{}' },
+                    { display: '\\overline{ABC}', latex: '\\overline{}' }, { display: '\\underline{ABC}', latex: '\\underline{}' },
+                    { display: '\\widehat{ABC}', latex: '\\widehat{}' }, { display: '\\widetilde{ABC}', latex: '\\widetilde{}' }
+                ]
+            },
+            {
+                name: "Miscellaneous Symbols",
+                symbols: [
+                    { display: '\\dots', latex: '\\dots ' }, { display: '\\cdots', latex: '\\cdots ' }, { display: '\\vdots', latex: '\\vdots ' },
+                    { display: '\\ddots', latex: '\\ddots ' }, { display: '\\hbar', latex: '\\hbar ' }, { display: '\\ell', latex: '\\ell ' },
+                    { display: '\\wp', latex: '\\wp ' }, { display: '\\Re', latex: '\\Re ' }, { display: '\\Im', latex: '\\Im ' },
+                    { display: '\\mho', latex: '\\mho ' }, { display: '\\prime', latex: '\\prime ' }, { display: '\\angle', latex: '\\angle ' },
+                    { display: '\\triangle', latex: '\\triangle ' }, { display: '\\ O', latex: '\\ O ' }, { display: '\\ Box', latex: '\\ Box ' }, // Note: \O, \Box need amssymb usually, but MathJax handles them.
+                    { display: '\\ Diamond', latex: '\\ Diamond ' }, { display: '\\ sqrt{x}', latex: '\\sqrt{}' }, { display: '\\sqrt[n]{x}', latex: '\\sqrt[]{}' },
+                    { display: '\\frac{a}{b}', latex: '\\frac{}{}' }, { display: '\\binom{n}{k}', latex: '\\binom{}{}' },
+                    { display: 'x^2', latex: '^{}' }, { display: 'x_n', latex: '_{}' },
+                    { display: '\\mathbb{R}', latex: '\\mathbb{R} ' }, { display: '\\mathbb{C}', latex: '\\mathbb{C} ' }, { display: '\\mathbb{Z}', latex: '\\mathbb{Z} ' },
+                    { display: '\\mathbb{N}', latex: '\\mathbb{N} ' }, { display: '\\mathbb{Q}', latex: '\\mathbb{Q} ' },
+                    { display: '\\mathcal{L}', latex: '\\mathcal{L} ' }, { display: '\\mathcal{F}', latex: '\\mathcal{F} ' }, { display: '\\mathcal{O}', latex: '\\mathcal{O} ' },
+                    { display: '\\ P', latex: '\\ P ' }, { display: '\\ S', latex: '\\ S ' }, // \P and \S are standard text symbols but sometimes used in math
+                    { display: '\\ dagger', latex: '\\ dagger ' }, { display: '\\ ddagger', latex: '\\ ddagger ' }, { display: '\\ star', latex: '\\ star ' },
+                     { display: '\\ bullet', latex: '\\ bullet ' }, { display: '\\ circ', latex: '\\ circ ' }
+                ]
+            }
+            // Add more categories or symbols as needed
+        ];
+
+        const equationInput = document.getElementById('equationInput');
+        const preview = document.getElementById('preview');
+        const errorDiv = document.getElementById('error');
+        const symbolPalette = document.getElementById('symbolPalette');
+
+        // --- Function to Generate Symbol Palette ---
+        function createSymbolPalette() {
+            symbolCategories.forEach(category => {
+                // Create category container
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'symbol-category';
+
+                // Create category title
+                const title = document.createElement('h4');
+                title.textContent = category.name;
+                categoryDiv.appendChild(title);
+
+                // Create grid for symbols
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'symbol-grid';
+
+                // Create buttons for each symbol
+                category.symbols.forEach(symbol => {
+                    const button = document.createElement('button');
+                    button.className = 'symbol-button';
+                    // Store LaTeX command in data attribute
+                    button.dataset.latex = symbol.latex;
+                     // Set display content for MathJax rendering
+                    button.innerHTML = `\\(${symbol.display}\\)`;
+                    // Add tooltip showing the LaTeX command
+                    button.title = symbol.latex.trim();
+                    button.type = 'button'; // Prevent form submission if ever inside a form
+                    gridDiv.appendChild(button);
+                });
+
+                categoryDiv.appendChild(gridDiv);
+                symbolPalette.appendChild(categoryDiv);
+            });
+
+            // Add event listener to the palette (using event delegation)
+            symbolPalette.addEventListener('click', function(event) {
+                // Check if the clicked element is a symbol button
+                const button = event.target.closest('.symbol-button');
+                if (button) {
+                    insertSymbol(button.dataset.latex);
+                }
+            });
+
+             // Typeset the symbols on the buttons *after* they are added to the DOM
+             MathJax.typesetPromise([symbolPalette])
+                .catch(err => console.error("Error typesetting palette:", err));
+        }
+
+        // --- Function to Insert Symbol into Textarea ---
+        function insertSymbol(latex) {
+            const startPos = equationInput.selectionStart;
+            const endPos = equationInput.selectionEnd;
+            const currentValue = equationInput.value;
+
+            // Insert the LaTeX command at the cursor position
+            const newValue = currentValue.substring(0, startPos) + latex + currentValue.substring(endPos);
+            equationInput.value = newValue;
+
+            // Move cursor to the end of the inserted text
+            // Special handling for commands ending in {} or []{} or \left( \right) etc.
+            let cursorPos = startPos + latex.length;
+            if (latex.endsWith('{}') || latex.endsWith('[]{}')) {
+                 cursorPos -= 1; // Position cursor inside the last {}
+            } else if (latex.endsWith('}')) {
+                 cursorPos -=1; // Position cursor inside {} like \hat{}
+            } else if (latex.includes('\\left') && latex.endsWith('\\right)')) {
+                 cursorPos = startPos + latex.indexOf('\\right)'); // Position between \left( \right)
+            } else if (latex.includes('\\left') && latex.endsWith('\\right]')) {
+                 cursorPos = startPos + latex.indexOf('\\right]');
+            } else if (latex.includes('\\left') && latex.endsWith('\\right\\}')) {
+                 cursorPos = startPos + latex.indexOf('\\right\\}');
+            } else if (latex.includes('\\left') && latex.endsWith('\\right|')) {
+                 cursorPos = startPos + latex.indexOf('\\right|');
+            } else if (latex.endsWith('} ')) { // For things like \mathbb{R}
+                // Keep cursor after the space
+            }
+
+
+            equationInput.selectionStart = equationInput.selectionEnd = cursorPos;
+
+            // Trigger the rendering update
+            renderEquation();
+
+            // Keep focus on the textarea
+            equationInput.focus();
+        }
+
+
+        // --- Function to Render Equation Preview ---
+        function renderEquation() {
+            const input = equationInput.value;
+            // Clear previous errorx
+            errorDiv.textContent = '';
+
+            // Wrap the input in LaTeX delimiters for MathJax
+            // Using \[ \] for display mode might be better for previews
+            preview.innerHTML = `\\[${input}\\]`;
+
+            // Try to render with MathJax and handle errors
+            MathJax.typesetPromise([preview]) // Target specific element
+                .catch(err => {
+                     console.error("MathJax Error:", err); // Log detailed error to console
+                     // Basic error message for the user
+                     preview.innerHTML = ''; // Clear preview on error
+                     errorDiv.textContent = 'Invalid LaTeX syntax. Check console for details.';
+                     // Add more specific user messages based on err.message if needed
+                     if (err.message && err.message.includes('Missing argument')) {
+                         errorDiv.textContent = 'Error: Missing argument for script (e.g., use x^2, x_n, \\sqrt{x}).';
+                     } else if (err.message && err.message.includes('Undefined control sequence')) {
+                         errorDiv.textContent = `Error: Undefined command (e.g., "${err.message.split('\\').pop()}" is invalid or requires a package).`;
+                     } else if (err.message && err.message.includes('Expected')) {
+                         errorDiv.textContent = 'Error: Syntax error (e.g., mismatched braces {} or brackets []).';
+                     }
+                });
+        }
+
+        // --- Initial Setup ---
+        window.onload = () => {
+            createSymbolPalette(); // Generate the palette first
+            renderEquation(); // Then render the initial equation
+        };
+
+    </script>
+    
+</body>
+</html>

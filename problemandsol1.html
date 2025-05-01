@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnovaSTEM - Easy Peasy!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css"> <!-- Your CSS file -->
+    <style>
+        /* Add this for better click feedback */
+        .icon-container {
+            cursor: pointer;
+        }
+    </style>
+       <style>
+
+        /* General Body Styling (if not already set globally) */
+body {
+    background-color: #0a192f; /* Dark navy background like the screenshot */
+    color: #ccd6f6; /* Light grey/blue text color */
+    font-family: 'Arial', sans-serif; /* Basic sans-serif, change if you know the exact font */
+    margin: 0;
+    padding: 0;
+}
+
+/* Section Styling */
+.section {
+    padding: 60px 20px; /* Add padding top/bottom and left/right */
+    text-align: center; /* Center align content within sections */
+    border-bottom: 1px solid rgba(100, 255, 218, 0.1); /* Subtle separator */
+}
+
+/* Section Heading Styling */
+.section h2 {
+    color: #ffffff; /* White heading */
+    font-size: 2.5em; /* Larger font size for headings */
+    margin-bottom: 50px; /* Space below heading */
+    font-weight: 600;
+}
+
+/* Icon Container Grid (using Flexbox) */
+#problem-icons,
+#feature-icons {
+    display: flex;
+    flex-wrap: wrap; /* Allow items to wrap to the next line */
+    justify-content: center; /* Center items horizontally */
+    gap: 30px; /* Space between icon blocks */
+    max-width: 1200px; /* Limit overall width */
+    margin: 0 auto; /* Center the container itself */
+}
+
+/* Individual Icon Block Styling */
+.icon-container {
+    display: flex;
+    flex-direction: column; /* Stack icon and text vertically */
+    align-items: center; /* Center items horizontally within the block */
+    background-color: rgba(100, 255, 218, 0.05); /* Very subtle teal background */
+    border: 1px solid rgba(100, 255, 218, 0.1); /* Subtle teal border */
+    border-radius: 8px; /* Rounded corners like feature cards */
+    padding: 25px; /* Padding inside the block */
+    width: 200px; /* Fixed width for consistency */
+    min-height: 180px; /* Minimum height */
+    box-sizing: border-box; /* Include padding and border in width/height */
+    transition: transform 0.3s ease, border-color 0.3s ease; /* Smooth hover transition */
+}
+
+.icon-container:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+    border-color: #64ffda; /* Highlight border on hover */
+}
+
+/* Main Icon Styling */
+.icon-container .icon {
+    font-size: 3em; /* Icon size */
+    color: #64ffda; /* Teal accent color */
+    margin-bottom: 15px; /* Space between icon and text */
+}
+
+/* Icon Text Styling */
+.icon-container .icon-text {
+    font-size: 0.9em;
+    color: #ccd6f6; /* Light text color */
+    line-height: 1.5; /* Improve readability */
+    text-align: center;
+}
+
+/* Small Icons within the Text */
+.icon-container .icon-text i {
+    font-size: 0.9em; /* Slightly smaller than text */
+    color: #64ffda; /* Match accent color */
+    margin-left: 5px; /* Small space before the icon */
+    opacity: 0.8; /* Slightly less prominent */
+}
+
+/* Helper Text Styling ("(You can click...)") */
+.section p {
+    font-size: 0.9em;
+    color: #8892b0; /* Dimmer text color */
+    margin-top: 40px; /* Space above helper text */
+}
+
+/* --- Responsive Adjustments --- */
+
+@media (max-width: 768px) {
+    .section h2 {
+        font-size: 2em;
+    }
+
+    .icon-container {
+        width: 180px; /* Slightly smaller width on tablets */
+        padding: 20px;
+        min-height: 160px;
+    }
+
+    #problem-icons,
+    #feature-icons {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+     .section h2 {
+        font-size: 1.8em;
+    }
+
+    .icon-container {
+        width: 150px; /* Even smaller on mobile */
+        padding: 15px;
+         min-height: 150px;
+    }
+     .icon-container .icon {
+        font-size: 2.5em;
+     }
+     .icon-container .icon-text {
+        font-size: 0.8em;
+     }
+
+    #problem-icons,
+    #feature-icons {
+        gap: 15px;
+    }
+}
+    </style>
+</head>
+<body>
+
+    <div id="problem-section" class="section">
+         <h2>The Problems</h2>
+         <div id="problem-icons">
+            <!-- Boring Stuff -->
+            <div class="icon-container">
+                <i class="fa-solid fa-face-meh icon problem-icon"
+                   data-original-icon="fa-face-meh"
+                   data-clicked-icon="fa-face-grin-beam"
+                   title="Feeling Bored"></i>
+                <span class="icon-text">Learning feels sleepy <i class="fa-solid fa-bed"></i></span>
+            </div>
+            <!-- Teacher Too Busy -->
+             <div class="icon-container">
+                <i class="fa-solid fa-person-running icon problem-icon"
+                   data-original-icon="fa-person-running"
+                   data-clicked-icon="fa-calendar-check"
+                   title="Teachers are busy!"></i>
+                <span class="icon-text">Teachers checking same boring assignment <i class="fa-solid fa-hourglass-half"></i></span>
+            </div>
+            <!-- Copying -->
+            <div class="icon-container">
+                <i class="fa-solid fa-copy icon problem-icon"
+                   data-original-icon="fa-copy"
+                   data-clicked-icon="fa-user-check"
+                   title="Just Copying"></i>
+                <span class="icon-text">Just copying homework <i class="fa-regular fa-copy"></i></span>
+            </div>
+            <!-- Not Listening -->
+             <div class="icon-container">
+                 <i class="fa-solid fa-ear-listen icon problem-icon"
+                    data-original-icon="fa-ear-listen"
+                    data-clicked-icon="fa-headphones-simple"
+                    title="Hard to Listen"></i>
+                 <span class="icon-text">Sitting in lectures, not focusing <i class="fa-solid fa-volume-xmark"></i></span>
+            </div>
+            <!-- Not Much Fun Making Things -->
+            <div class="icon-container">
+                <i class="fa-solid fa-puzzle-piece icon problem-icon"
+                   data-original-icon="fa-puzzle-piece"
+                   data-clicked-icon="fa-lightbulb"
+                   title="Less Fun Making Stuff"></i>
+                <span class="icon-text">Cant showcase what they learn<i class="fa-solid fa-paintbrush"></i></span>
+            </div>
+         </div>
+    </div>
+
+    <div id="feature-section" class="section">
+        <h2>Features</h2>
+        <div id="feature-icons">
+            <!-- Magic Pictures Lab -->
+             <div class="icon-container">
+                <i class="fa-solid fa-wand-magic-sparkles icon feature-icon"
+                   data-original-icon="fa-wand-magic-sparkles"
+                   data-clicked-icon="fa-gears"
+                   title="Magic Picture Lab"></i>
+                <span class="icon-text">Animation while learn <i class="fa-solid fa-film"></i></span>
+            </div>
+            <!-- Easy Check for Teachers -->     
+             <div class="icon-container">
+                <i class="fa-solid fa-person-chalkboard icon feature-icon"
+                   data-original-icon="fa-person-chalkboard"
+                   data-clicked-icon="fa-chart-line"
+                   title="Easy Check for Teachers"></i>
+                 <span class="icon-text">Instead of checking assignement teachers sees votes and 5 sec animation <i class="fa-solid fa-check"></i></span>
+            </div>
+             <!-- No Copying Allowed! -->
+             <div class="icon-container">
+                 <i class="fa-solid fa-user-secret icon feature-icon"
+                    data-original-icon="fa-user-secret"
+                    data-clicked-icon="fa-shield-halved"
+                    title="No Copying!"></i>
+                 <span class="icon-text">Each animation is different so no copying<i class="fa-solid fa-robot"></i></span>
+            </div>
+            <!-- See How You're Doing -->
+             <div class="icon-container">
+                <i class="fa-solid fa-binoculars icon feature-icon"
+                   data-original-icon="fa-binoculars"
+                   data-clicked-icon="fa-chart-pie"
+                   title="See How You Do"></i>
+                 <span class="icon-text">Analytic tool to see student focus<i class="fa-solid fa-magnifying-glass-chart"></i></span>
+            </div>
+            <!-- Show Off! -->
+            <div class="icon-container">
+                 <i class="fa-solid fa-share-nodes icon feature-icon"
+                    data-original-icon="fa-share-nodes"
+                    data-clicked-icon="fa-rocket"
+                    title="Show Off!"></i>
+                 <span class="icon-text">Student share their creativity boosting other students to learn STEM<i class="fa-solid fa-thumbs-up"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this script at the bottom of your body -->
+    <script>
+        // Select all the icon containers
+        const iconContainers = document.querySelectorAll('.icon-container');
+
+        // Add a click event listener to each container
+        iconContainers.forEach(container => {
+            container.addEventListener('click', () => {
+                // Find the icon element (i tag) inside the clicked container
+                const iconElement = container.querySelector('.icon');
+
+                // Get the original and clicked icon classes from data attributes
+                const originalIcon = iconElement.dataset.originalIcon;
+                const clickedIcon = iconElement.dataset.clickedIcon;
+
+                // Check which icon is currently displayed
+                if (iconElement.classList.contains(originalIcon)) {
+                    // If the original icon is showing, switch to the clicked icon
+                    iconElement.classList.remove(originalIcon);
+                    iconElement.classList.add(clickedIcon);
+                } else if (iconElement.classList.contains(clickedIcon)) {
+                    // If the clicked icon is showing, switch back to the original icon
+                    iconElement.classList.remove(clickedIcon);
+                    iconElement.classList.add(originalIcon);
+                }
+                // Optional: Add a class to the container for potential styling
+                container.classList.toggle('is-active');
+            });
+        });
+    </script>
+
+</body>
+</html>
